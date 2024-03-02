@@ -1,7 +1,79 @@
 <!DOCTYPE html>
 <html>
+<head><style>
+#controls {
+  width:25%; float:right;
+}
+#glcanvas {
+  border:1px solid #000000;
+  float:left; width:50%;
+}
+#controls {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    border-left: 2px solid #ddd;
+    box-sizing: border-box;
+    height: 100vh;
+    overflow-y: auto;
+    padding-left:1em;
+}
+
+#controls h2 {
+    color: #333;
+}
+
+#controls div {
+    margin-bottom: 10px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    color: #666;
+}
+
+input, button {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    box-sizing: border-box;
+}
+
+button {
+    background-color: #5C8FCE;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #4B7CB0;
+}
+
+</style></head>
 <body>
-<canvas id="glcanvas" width="640" height="480" style="border:1px solid #000000;"></canvas>
+<div id="controls">
+    <h2>L-System Controls</h2>
+    <div>
+        <label for="axiom">Axiom:</label>
+        <input type="text" id="axiom" value="F">
+    </div>
+    <div>
+        <label for="rule">Rule (F=):</label>
+        <input type="text" id="rule" value="FF+[+F-F-F]-[-F+F+F]">
+    </div>
+    <div>
+        <label for="depth">Recursion Depth:</label>
+        <input type="number" id="depth" value="5">
+    </div>
+    <div>
+        <label for="angle">Angle:</label>
+        <input type="number" id="angle" value="25">
+    </div>
+    <button id="update">Update L-System</button>
+</div>
+
+<canvas id="glcanvas" width="800" height="600"></canvas>
 <script>
 
 // Vertex shader program and WebGL initialization code
@@ -19,7 +91,6 @@ const fsSource = `
       gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0); // Draw in white
     }
 `;
-
 function initShaderProgram(gl, vsSource, fsSource) {
     const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
     const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
@@ -117,34 +188,37 @@ function calculateBounds(instructions, angle) {
 
 /* Core Functions */
 function drawLSystem(gl, shaderProgram, instructions, angle) {
-    let dir = Math.PI/2; // Turtle's direction in radians
+    let dir = Math.PI / 2; // Start upwards
     const rad = (a) => a * (Math.PI / 180);
-    const vertices = [];
-
-    // Simplified drawing logic assuming normalized device coordinates
-    let x = 0, y = -0.5; // Starting position at the center
     const stack = [];
+    let vertices = [];
+
+    // Starting position in NDC
+    let x = 0; // Center of canvas in x
+    let y = -0.66; // Two-thirds from the bottom in y
 
     instructions.split('').forEach(cmd => {
         switch(cmd) {
             case 'F':
-                const newX = x + Math.cos(dir) * 0.02; // Step size adjusted for visibility
+                // Move forward by a small step
+                const newX = x + Math.cos(dir) * 0.02; // Adjust step size as needed
                 const newY = y + Math.sin(dir) * 0.02;
+                // Store vertices in NDC
                 vertices.push(x, y, newX, newY);
                 x = newX;
                 y = newY;
                 break;
             case '+':
-                dir += rad(angle);
+                dir -= rad(angle); // Right turn
                 break;
             case '-':
-                dir -= rad(angle);
+                dir += rad(angle); // Left turn
                 break;
             case '[':
-                stack.push({x, y, dir});
+                stack.push({x, y, dir}); // Push current state to stack
                 break;
             case ']':
-                const state = stack.pop();
+                const state = stack.pop(); // Pop state from stack
                 x = state.x;
                 y = state.y;
                 dir = state.dir;
@@ -152,16 +226,23 @@ function drawLSystem(gl, shaderProgram, instructions, angle) {
         }
     });
 
+    // Create buffer and load vertices into it
     const vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 
+    // Get attribute location, enable it
     const vertexPosition = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
-    gl.vertexAttribPointer(vertexPosition, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vertexPosition);
 
+    // Point an attribute to the currently bound VBO
+    gl.vertexAttribPointer(vertexPosition, 2, gl.FLOAT, false, 0, 0);
+
+    // Draw the lines
     gl.drawArrays(gl.LINES, 0, vertices.length / 2);
 }
+
+
 
 function generateLSystem(rules, axiom, depth) {
     let result = axiom;
@@ -183,6 +264,9 @@ function main() {
     // Set canvas dimensions to 70% of window width and 100% of window height
     canvas.width = window.innerWidth * 0.7;
     canvas.height = window.innerHeight;
+    var drag = false;
+    var dragStart;
+    var dragEnd;
 
     // Ensure the CSS styling matches (optional, for consistency)
     canvas.style.width = canvas.width + 'px';
@@ -194,22 +278,62 @@ function main() {
     }
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     // Setup mouse move event listener to update the angle based on mouse position
-    canvas.addEventListener('mousemove', (event) => {
+    canvas.addEventListener('mousedown', (event) => {
         const rect = canvas.getBoundingClientRect();
         mouseX = event.clientX - rect.left; // Update global mouseX
         const canvasWidth = canvas.clientWidth;
-        angle = (mouseX / canvasWidth) * 180; // Map mouse X to a 0-90 degree angle
+        angle = (mouseX / canvasWidth) * 360; // Map mouse X to a 0-90 degree angle
+        document.getElementById('angle').value = angle;
+        if(drag === false) {
+            drag = true;
+        } else { drag = false; }
+
+    });
+
+    // Mobile sup
+    canvas.addEventListener('mousemove', (event) => {
+      if (drag) {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = event.clientX - rect.left; // Update global mouseX
+        const canvasWidth = canvas.clientWidth;
+        angle = (mouseX / canvasWidth) * 360; // Map mouse X to a 0-90 degree angle
+        document.getElementById('angle').value = angle;
+      }
     });
 
     // L-system setup
-    const rules = {"F": "FF+[+F-F-F]-[-F+F+F]"};
+    const rules = {"F": document.getElementById('rule').value};
     const axiom = "F";
     const recursionDepth = 5; // Adjust as needed
+
+    document.getElementById('update').addEventListener('click', () => {
+      const axiom = document.getElementById('axiom').value;
+      const ruleInput = document.getElementById('rule').value;
+      const depth = parseInt(document.getElementById('depth').value, 10);
+      const angle = parseFloat(document.getElementById('angle').value);
+
+      // Assuming your rule input format is "F=FF+[+F-F-F]-[-F+F+F]"
+      // Convert it into a rules object
+      const rules = ruleInput.split(';').reduce((acc, cur) => {
+          const parts = cur.split('=');
+          acc[parts[0]] = parts[1];
+          return acc;
+      }, {});
+
+      // Update global variables or directly use these in your draw function
+      //drawScene(axiom, rules, depth, angle); // Modify drawScene to accept these parameters
+      const instructions = generateLSystem(rules, axiom, recursionDepth);
+      drawLSystem(gl, shaderProgram, instructions, angle);
+    });
 
     function animate() {
         requestAnimationFrame(animate); // Continue the animation loop
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the canvas
 
+        const axiom = document.getElementById('axiom').value;
+        const ruleStr = document.getElementById('rule').value;
+        const depth = parseInt(document.getElementById('depth').value, 10);
+        const angle = parseFloat(document.getElementById('angle').value);
         // Generate the L-system string with the current angle
         const instructions = generateLSystem(rules, axiom, recursionDepth);
         // Draw the L-system
@@ -223,6 +347,8 @@ window.onload = main;
 
 
 window.addEventListener('resize', () => {
+  location.reload();
+  /*
     const canvas = document.getElementById('glcanvas');
     canvas.width = window.innerWidth * 0.7;
     canvas.height = window.innerHeight;
@@ -231,6 +357,8 @@ window.addEventListener('resize', () => {
     canvas.style.width = canvas.width + 'px';
     canvas.style.height = canvas.height + 'px';
     gl.viewport(0, 0, canvas.width, canvas.height);
+
+    */
     // You might need to call a function to redraw your scene here
 });
 
