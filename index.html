@@ -284,8 +284,8 @@ function generateLSystem(rules, axiom, depth) {
 }
 
 function handleOrientation(event) {
-    const beta = event.gamma * event.beta; // Front-to-back tilt
-    let normalizedAngle = beta < 0 ? 360 + beta : beta;
+    const beta = event.beta*1.5; // Left / Right tilt.
+    let normalizedAngle = beta; + 90;
     document.getElementById('angle').value = normalizedAngle.toFixed(2);
 }
 
