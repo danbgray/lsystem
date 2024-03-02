@@ -109,7 +109,7 @@ void main(void) {
         color = mix(colorC, colorA, (modDistance - 0.66) / 0.33);
     }
 
-    gl_FragColor = vec4(color, 0.7); // Apply color with translucency
+    gl_FragColor = vec4(color, 1.); // Apply color with translucency
 }
 
 `;
@@ -346,7 +346,7 @@ function generateLSystem(rules, axiom, depth) {
 }
 
 function handleOrientation(event) {
-    const beta = event.beta*0.5; // Left / Right tilt.
+    const beta = event.beta; // Left / Right tilt.
     let normalizedAngle = beta + 90;
     document.getElementById('angle').value = normalizedAngle.toFixed(2);
 }
