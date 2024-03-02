@@ -346,8 +346,8 @@ function generateLSystem(rules, axiom, depth) {
 }
 
 function handleOrientation(event) {
-    const beta = event.beta; // Left / Right tilt.
-    let normalizedAngle = beta + 90;
+    const beta = event.beta*1.5; // Left / Right tilt.
+    let normalizedAngle = beta + 180;
     document.getElementById('angle').value = normalizedAngle.toFixed(2);
 }
 
