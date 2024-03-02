@@ -79,18 +79,39 @@ button:hover {
 
 // Vertex shader program and WebGL initialization code
 const vsSource = `
-    attribute vec4 aVertexPosition;
-    void main(void) {
-      gl_Position = aVertexPosition;
-    }
+attribute vec4 aVertexPosition;
+attribute float aDistance;
+varying highp float vDistance;
+
+void main(void) {
+    gl_Position = aVertexPosition;
+    vDistance = aDistance;
+}
 `;
 
 // Fragment shader program
 const fsSource = `
-    precision mediump float;
-    void main(void) {
-      gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0); // Draw in white
+precision mediump float;
+varying highp float vDistance;
+
+void main(void) {
+    float modDistance = mod(vDistance, 1.0);
+    vec3 colorA = vec3(0.1, 0.2, 0.5); // Darker blue
+    vec3 colorB = vec3(0.4, 0.1, 0.2); // Darker pink
+    vec3 colorC = vec3(0.1, 0.5, 0.1); // Darker green
+
+    vec3 color;
+    if(modDistance < 0.33) {
+        color = mix(colorA, colorB, modDistance / 0.33);
+    } else if(modDistance < 0.66) {
+        color = mix(colorB, colorC, (modDistance - 0.33) / 0.33);
+    } else {
+        color = mix(colorC, colorA, (modDistance - 0.66) / 0.33);
     }
+
+    gl_FragColor = vec4(color, 0.7); // Apply color with translucency
+}
+
 `;
 function initShaderProgram(gl, vsSource, fsSource) {
     const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
@@ -189,58 +210,99 @@ function calculateBounds(instructions, angle) {
 
 /* Core Functions */
 function drawLSystem(gl, shaderProgram, instructions, angle) {
-    let dir = Math.PI / 2; // Start upwards
+    let dir = Math.PI / 2; // Start direction (upwards)
     const rad = (a) => a * (Math.PI / 180);
     const stack = [];
     let vertices = [];
+    let distance = 0; // Initialize distance
+    let distanceAttributes = []; // Array for distance attributes
 
-    // Starting position in NDC
-    let x = 0; // Center of canvas in x
-    let y = -0.66; // Two-thirds from the bottom in y
+    // Parameters for line rendering
+    let thicknessBase = 0.0007; // Base thickness of lines
+    let stepSize = 0.02; // Step size for 'F' movement
+
+    // Starting position in normalized device coordinates (NDC)
+    let x = 0, y = -0.5; // Starting near the bottom-center of the screen
 
     instructions.split('').forEach(cmd => {
-        switch(cmd) {
+        switch (cmd) {
             case 'F':
-                // Move forward by a small step
-                const newX = x + Math.cos(dir) * 0.02; // Adjust step size as needed
-                const newY = y + Math.sin(dir) * 0.02;
-                // Store vertices in NDC
-                vertices.push(x, y, newX, newY);
+                // Calculate next point
+                let newX = x + Math.cos(dir) * stepSize;
+                let newY = y + Math.sin(dir) * stepSize;
+
+                // Increase thickness based on distance
+                let thickness = thicknessBase + distance * 0.0003; // Adjust factor to scale thickness change
+
+                // Calculate perpendicular vector for thickness
+                let perpX = Math.cos(dir + Math.PI / 2) * thickness;
+                let perpY = Math.sin(dir + Math.PI / 2) * thickness;
+
+                // Generate quad vertices (two triangles) for the "thick line"
+                vertices.push(
+                    x - perpX, y - perpY,
+                    newX - perpX, newY - perpY,
+                    x + perpX, y + perpY,
+                    x + perpX, y + perpY,
+                    newX - perpX, newY - perpY,
+                    newX + perpX, newY + perpY
+                );
+
+                // Update distance attributes for each vertex of the quad
+                for (let i = 0; i < 6; i++) {
+                    distanceAttributes.push(distance);
+                }
+
+                distance += stepSize; // Increment distance for color variation
                 x = newX;
                 y = newY;
                 break;
             case '+':
-                dir -= rad(angle); // Right turn
+                dir -= rad(angle); // Turn right by 'angle' degrees
                 break;
             case '-':
-                dir += rad(angle); // Left turn
+                dir += rad(angle); // Turn left by 'angle' degrees
                 break;
             case '[':
-                stack.push({x, y, dir}); // Push current state to stack
+                stack.push({x, y, dir, distance}); // Save state
                 break;
             case ']':
-                const state = stack.pop(); // Pop state from stack
-                x = state.x;
-                y = state.y;
-                dir = state.dir;
+                { // Pop state
+                    let popped = stack.pop();
+                    x = popped.x;
+                    y = popped.y;
+                    dir = popped.dir;
+                    distance = popped.distance; // Restore distance for color continuity
+                }
                 break;
+            // Implement other cases if needed
         }
     });
 
-    // Create buffer and load vertices into it
+    // Bind and set up vertex buffer
     const vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 
-    // Get attribute location, enable it
+    // Bind and set up distance buffer
+    const distanceBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, distanceBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(distanceAttributes), gl.STATIC_DRAW);
+
+    // Shader attribute locations
     const vertexPosition = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
     gl.enableVertexAttribArray(vertexPosition);
-
-    // Point an attribute to the currently bound VBO
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     gl.vertexAttribPointer(vertexPosition, 2, gl.FLOAT, false, 0, 0);
 
-    // Draw the lines
-    gl.drawArrays(gl.LINES, 0, vertices.length / 2);
+    const distanceAttribLocation = gl.getAttribLocation(shaderProgram, 'aDistance');
+    gl.enableVertexAttribArray(distanceAttribLocation);
+    gl.bindBuffer(gl.ARRAY_BUFFER, distanceBuffer);
+    gl.vertexAttribPointer(distanceAttribLocation, 1, gl.FLOAT, false, 0, 0);
+
+    // Draw
+    gl.useProgram(shaderProgram);
+    gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 2); // Draw the triangles
 }
 
 
@@ -284,8 +346,8 @@ function generateLSystem(rules, axiom, depth) {
 }
 
 function handleOrientation(event) {
-    const beta = event.beta*1.5; // Left / Right tilt.
-    let normalizedAngle = beta; + 90;
+    const beta = event.beta*0.5; // Left / Right tilt.
+    let normalizedAngle = beta + 90;
     document.getElementById('angle').value = normalizedAngle.toFixed(2);
 }
 
