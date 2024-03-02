@@ -1,3 +1,16 @@
+/*!
+ * ----------------------------------------------------------------------------
+ * L-System Block Render
+ * ----------------------------------------------------------------------------
+ * Copyright (C) 2024 Daniel Gray
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the MIT Public License
+ * I do ask that if you copy it, you credit me (twitter @dbgray)
+ * and if you profit from it, you consider chipping in.
+ * ----------------------------------------------------------------------------
+ */
+
 
 // Global reference to the shader program
 let currentShaderProgram = null;
