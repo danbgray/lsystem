@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="glcanvas" width="640" height="480" style="border:1px solid #000000;"></canvas>
+<script>
+
+// Vertex shader program and WebGL initialization code
+const vsSource = `
+    attribute vec4 aVertexPosition;
+    void main(void) {
+      gl_Position = aVertexPosition;
+    }
+`;
+
+// Fragment shader program
+const fsSource = `
+    precision mediump float;
+    void main(void) {
+      gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0); // Draw in white
+    }
+`;
+function initShaderProgram(gl, vsSource, fsSource) {
+    const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
+    const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
+
+    // Create the shader program
+    const shaderProgram = gl.createProgram();
+    gl.attachShader(shaderProgram, vertexShader);
+    gl.attachShader(shaderProgram, fragmentShader);
+    gl.linkProgram(shaderProgram);
+
+    // Check if the shader program was successfully linked
+    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+        alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
+        return null;
+    }
+
+    return shaderProgram;
+}
+
+function loadShader(gl, type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+
+    // Check if the shader was successfully compiled
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        alert('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+    }
+
+    return shader;
+}
+
+
+function initWebGL(canvas) {
+    const gl = canvas.getContext("webgl");
+    if (!gl) {
+        alert("Unable to initialize WebGL. Your browser may not support it.");
+        return null;
+    }
+
+    const shaderProgram = initShaderProgram(gl, vsSource, fsSource); // Assume this function is correctly implemented
+    gl.useProgram(shaderProgram);
+
+    // Adjust canvas size to match display size
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+
+    // Clear the canvas
+    gl.clearColor(0.0, 0.0, 0.0, 1.0); // Clear to black, fully opaque
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    return {gl, shaderProgram};
+}
+/* Utility Functions */
+function calculateBounds(instructions, angle) {
+    let x = 0, y = 0, dir = Math.PI / 2; // Starting conditions
+    const rad = (a) => a * (Math.PI / 180);
+    const stack = [];
+    let minX = 0, maxX = 0, minY = 0, maxY = 0;
+
+    instructions.split('').forEach((cmd) => {
+        switch(cmd) {
+            case 'F':
+                x += Math.cos(dir);
+                y += Math.sin(dir);
+                minX = Math.min(minX, x);
+                maxX = Math.max(maxX, x);
+                minY = Math.min(minY, y);
+                maxY = Math.max(maxY, y);
+                break;
+            case '+':
+                dir += rad(angle);
+                break;
+            case '-':
+                dir -= rad(angle);
+                break;
+            case '[':
+                stack.push({x, y, dir});
+                break;
+            case ']':
+                const state = stack.pop();
+                x = state.x;
+                y = state.y;
+                dir = state.dir;
+                break;
+        }
+    });
+
+    return {minX, maxX, minY, maxY};
+}
+
+
+/* Core Functions */
+function drawLSystem(gl, shaderProgram, instructions, angle) {
+    let dir = Math.PI/2; // Turtle's direction in radians
+    const rad = (a) => a * (Math.PI / 180);
+    const vertices = [];
+
+    // Simplified drawing logic assuming normalized device coordinates
+    let x = 0, y = -0.5; // Starting position at the center
+    const stack = [];
+
+    instructions.split('').forEach(cmd => {
+        switch(cmd) {
+            case 'F':
+                const newX = x + Math.cos(dir) * 0.02; // Step size adjusted for visibility
+                const newY = y + Math.sin(dir) * 0.02;
+                vertices.push(x, y, newX, newY);
+                x = newX;
+                y = newY;
+                break;
+            case '+':
+                dir += rad(angle);
+                break;
+            case '-':
+                dir -= rad(angle);
+                break;
+            case '[':
+                stack.push({x, y, dir});
+                break;
+            case ']':
+                const state = stack.pop();
+                x = state.x;
+                y = state.y;
+                dir = state.dir;
+                break;
+        }
+    });
+
+    const vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+
+    const vertexPosition = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
+    gl.vertexAttribPointer(vertexPosition, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vertexPosition);
+
+    gl.drawArrays(gl.LINES, 0, vertices.length / 2);
+}
+
+function generateLSystem(rules, axiom, depth) {
+    let result = axiom;
+    for (let i = 0; i < depth; i++) {
+        let newResult = '';
+        for (const char of result) {
+            newResult += rules[char] || char;
+        }
+        result = newResult;
+    }
+    return result;
+}
+// Global variables for angle and mouse position
+let angle = 25; // Default angle
+let mouseX = 0; // Mouse X position
+
+function main() {
+    const canvas = document.getElementById('glcanvas');
+    // Set canvas dimensions to 70% of window width and 100% of window height
+    canvas.width = window.innerWidth * 0.7;
+    canvas.height = window.innerHeight;
+
+    // Ensure the CSS styling matches (optional, for consistency)
+    canvas.style.width = canvas.width + 'px';
+    canvas.style.height = canvas.height + 'px';
+
+    const {gl, shaderProgram} = initWebGL(canvas);
+    if (!gl) {
+        return;
+    }
+    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+    // Setup mouse move event listener to update the angle based on mouse position
+    canvas.addEventListener('mousemove', (event) => {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = event.clientX - rect.left; // Update global mouseX
+        const canvasWidth = canvas.clientWidth;
+        angle = (mouseX / canvasWidth) * 180; // Map mouse X to a 0-90 degree angle
+    });
+
+    // L-system setup
+    const rules = {"F": "FF+[+F-F-F]-[-F+F+F]"};
+    const axiom = "F";
+    const recursionDepth = 5; // Adjust as needed
+
+    function animate() {
+        requestAnimationFrame(animate); // Continue the animation loop
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the canvas
+
+        // Generate the L-system string with the current angle
+        const instructions = generateLSystem(rules, axiom, recursionDepth);
+        // Draw the L-system
+        drawLSystem(gl, shaderProgram, instructions, angle);
+    }
+
+    animate(); // Start the animation loop
+}
+
+window.onload = main;
+
+
+window.addEventListener('resize', () => {
+    const canvas = document.getElementById('glcanvas');
+    canvas.width = window.innerWidth * 0.7;
+    canvas.height = window.innerHeight;
+
+    // Ensure the CSS styling matches (optional, for consistency)
+    canvas.style.width = canvas.width + 'px';
+    canvas.style.height = canvas.height + 'px';
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    // You might need to call a function to redraw your scene here
+});
+
+</script>
+</body>
+</html>
