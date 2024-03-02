@@ -1,0 +1,64 @@
+
+body, html { padding:0; margin:0;}
+label {
+    display: block;
+    margin-bottom: 5px;
+    color: #666;
+}
+
+input, button {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    box-sizing: border-box;
+}
+button {
+    background-color: #5C8FCE;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #4B7CB0;
+}
+
+#controls {
+  width:25%; float:right;
+}
+
+#glcanvas {
+  border:1px solid #000000;
+  float:left; width:50%;
+}
+
+#controls {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    border-left: 2px solid #ddd;
+    box-sizing: border-box;
+    height: 100vh;
+    overflow-y: auto;
+    padding-left:1em;
+}
+
+#controls h2 {
+    color: #333;
+}
+
+#controls div {
+    margin-bottom: 10px;
+}
+
+#centerControl input { width:40%; }
+
+#dragMessage {
+    position: absolute; /* Or fixed, depending on your layout */
+    top: 50%; /* Adjust based on your layout */
+    left: 30%; /* Center horizontally */
+    transform: translateX(-50%); /* Center horizontally */
+    color: #111;
+    padding: 5px 10px;
+    border-radius: 5px;
+    z-index: 100; /* Ensure it's above other elements */
+}
