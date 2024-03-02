@@ -52,6 +52,7 @@ button:hover {
 
 </style></head>
 <body>
+
 <div id="controls">
     <h2>L-System Controls</h2>
     <div>
@@ -125,7 +126,6 @@ function loadShader(gl, type, source) {
     return shader;
 }
 
-
 function initWebGL(canvas) {
     const gl = canvas.getContext("webgl");
     if (!gl) {
@@ -147,6 +147,7 @@ function initWebGL(canvas) {
 
     return {gl, shaderProgram};
 }
+
 /* Utility Functions */
 function calculateBounds(instructions, angle) {
     let x = 0, y = 0, dir = Math.PI / 2; // Starting conditions
@@ -255,18 +256,80 @@ function generateLSystem(rules, axiom, depth) {
     }
     return result;
 }
+
+
+/* Mobile Support Functions */
+
+/* Mobile Support */
+  function setupSensors() {
+        // Check for DeviceOrientationEvent support and request permission on iOS 13+
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission()
+                .then(response => {
+                    if (response === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation, false);
+                    } else {
+                        console.error('Device Orientation permission not granted.');
+                        // Implement fallback or inform the user as needed
+                    }
+                })
+                .catch(console.error);
+        } else {
+            // Directly add event listeners for devices not requiring permission (including Android)
+            window.addEventListener('deviceorientation', handleOrientation, false);
+        }
+
+        // Add devicemotion listener for all devices
+        window.addEventListener('devicemotion', handleMotion, false);
+}
+
+function handleOrientation(event) {
+    const beta = event.gamma * event.beta; // Front-to-back tilt
+    let normalizedAngle = beta < 0 ? 360 + beta : beta;
+    document.getElementById('angle').value = normalizedAngle.toFixed(2);
+}
+
+function handleMotion(event) {
+    // Placeholder for motion handling logic
+    console.log(event);
+}
+
+
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+/* Adjust mobile controls */
+function adjustLayoutForMobile() {
+  if (isMobileDevice()) {
+      // Hide controls panel
+      document.getElementById('controls').style.display = 'none';
+
+      // Make canvas full screen
+      const canvas = document.getElementById('glcanvas');
+      canvas.style.width = '100%';
+      canvas.style.height = '100vh'; // Use 100% of the viewport height
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+  }
+}
+
 // Global variables for angle and mouse position
 let angle = 25; // Default angle
 let mouseX = 0; // Mouse X position
 
+
+
 function main() {
+    adjustLayoutForMobile(); // Adjust layout based on the device type
     const canvas = document.getElementById('glcanvas');
     // Set canvas dimensions to 70% of window width and 100% of window height
-    canvas.width = window.innerWidth * 0.7;
+    canvas.width = window.innerWidth * (isMobileDevice() ? 1 : 0.7); // Adjust size based on device type
     canvas.height = window.innerHeight;
     var drag = false;
     var dragStart;
     var dragEnd;
+
 
     // Ensure the CSS styling matches (optional, for consistency)
     canvas.style.width = canvas.width + 'px';
@@ -279,41 +342,6 @@ function main() {
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
 
     /* Motion and realtime event listeners */
-
-    /* Mobile Support */
-      function setupSensors() {
-            // Check for DeviceOrientationEvent support and request permission on iOS 13+
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .then(response => {
-                        if (response === 'granted') {
-                            window.addEventListener('deviceorientation', handleOrientation, false);
-                        } else {
-                            console.error('Device Orientation permission not granted.');
-                            // Implement fallback or inform the user as needed
-                        }
-                    })
-                    .catch(console.error);
-            } else {
-                // Directly add event listeners for devices not requiring permission (including Android)
-                window.addEventListener('deviceorientation', handleOrientation, false);
-            }
-
-            // Add devicemotion listener for all devices
-            window.addEventListener('devicemotion', handleMotion, false);
-    }
-
-    function handleOrientation(event) {
-        const beta = event.beta; // Front-to-back tilt
-        let normalizedAngle = beta < 0 ? 360 + beta : beta;
-        document.getElementById('angle').value = normalizedAngle.toFixed(2);
-    }
-
-    function handleMotion(event) {
-        // Placeholder for motion handling logic
-        console.log(event);
-    }
-
     setupSensors();
 
 
