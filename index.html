@@ -1,56 +1,8 @@
 <!DOCTYPE html>
 <html>
-<head><style>
-#controls {
-  width:25%; float:right;
-}
-#glcanvas {
-  border:1px solid #000000;
-  float:left; width:50%;
-}
-#controls {
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
-    border-left: 2px solid #ddd;
-    box-sizing: border-box;
-    height: 100vh;
-    overflow-y: auto;
-    padding-left:1em;
-}
-
-#controls h2 {
-    color: #333;
-}
-
-#controls div {
-    margin-bottom: 10px;
-}
-
-label {
-    display: block;
-    margin-bottom: 5px;
-    color: #666;
-}
-
-input, button {
-    width: 100%;
-    padding: 8px;
-    margin-top: 5px;
-    box-sizing: border-box;
-}
-
-button {
-    background-color: #5C8FCE;
-    color: white;
-    border: none;
-    cursor: pointer;
-}
-
-button:hover {
-    background-color: #4B7CB0;
-}
-
-</style></head>
+<head>
+<link rel="stylesheet" href="style.css" />
+</head>
 <body>
 
 <div id="controls">
@@ -67,18 +19,67 @@ button:hover {
         <label for="depth">Recursion Depth:</label>
         <input type="number" id="depth" value="5">
     </div>
+    <div id="centerControl">
+      <label for="centerX">Center</label>
+      <input type="number" id="centerX" value="0" step="any">
+      <input type="number" id="centerY" value="-.5" step="any">
+    </div>
     <div>
         <label for="angle">Angle:</label>
         <input type="number" id="angle" value="25">
     </div>
-    <button id="update">Update L-System</button>
+    <hr />
+    <div id="shaderCodeContainer" style="margin-top: 20px;">
+    <button id="toggleShaderCode">Edit Shader Code</button>
+    <div id="shaderCodeContent" style="display: none;">
+      <button id="updateShader">Update Shaders</button>
+        <textarea id="vertexShaderCode" rows="10" style="width: 100%;">
+          attribute vec4 aVertexPosition;
+          attribute float aDistance;
+          varying highp float vDistance;
+
+          void main(void) {
+              gl_Position = aVertexPosition;
+              vDistance = aDistance;
+          }
+        </textarea>
+        <textarea id="fragmentShaderCode" rows="10" style="width: 100%;">
+          precision mediump float;
+          varying highp float vDistance;
+
+          void main(void) {
+              float modDistance = mod(vDistance, 1.0);
+              vec3 colorA = vec3(0.1, 0.2, 0.5); // Darker blue
+              vec3 colorB = vec3(0.4, 0.1, 0.2); // Darker pink
+              vec3 colorC = vec3(0.1, 0.5, 0.1); // Darker green
+
+              vec3 color;
+              if(modDistance < 0.33) {
+                  color = mix(colorA, colorB, modDistance / 0.33);
+              } else if(modDistance < 0.66) {
+                  color = mix(colorB, colorC, (modDistance - 0.33) / 0.33);
+              } else {
+                  color = mix(colorC, colorA, (modDistance - 0.66) / 0.33);
+              }
+
+              gl_FragColor = vec4(color, 1.); // Apply color with translucency
+          }
+        </textarea>
+    </div>
+</div>
+
+    <button id="update">Create Link</button>
 </div>
 
 <canvas id="glcanvas" width="800" height="600"></canvas>
+<div id="dragMessage" style="display: none;"><!--<h2>Click In This Area</h2>--></div>
 <script>
 
+// Global reference to the shader program
+let currentShaderProgram = null;
+
 // Vertex shader program and WebGL initialization code
-const vsSource = `
+let vsSource = `
 attribute vec4 aVertexPosition;
 attribute float aDistance;
 varying highp float vDistance;
@@ -90,7 +91,7 @@ void main(void) {
 `;
 
 // Fragment shader program
-const fsSource = `
+let fsSource = `
 precision mediump float;
 varying highp float vDistance;
 
@@ -118,18 +119,17 @@ function initShaderProgram(gl, vsSource, fsSource) {
     const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
 
     // Create the shader program
-    const shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    gl.linkProgram(shaderProgram);
+    currentShaderProgram = gl.createProgram();
+    gl.attachShader(currentShaderProgram, vertexShader);
+    gl.attachShader(currentShaderProgram, fragmentShader);
+    gl.linkProgram(currentShaderProgram);
 
     // Check if the shader program was successfully linked
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-        alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
+    if (!gl.getProgramParameter(currentShaderProgram, gl.LINK_STATUS)) {
+        alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(currentShaderProgram));
         return null;
     }
-
-    return shaderProgram;
+    return currentShaderProgram;
 }
 
 function loadShader(gl, type, source) {
@@ -209,7 +209,7 @@ function calculateBounds(instructions, angle) {
 
 
 /* Core Functions */
-function drawLSystem(gl, shaderProgram, instructions, angle) {
+function drawLSystem(gl, shaderProgram, instructions, angle, centerX, centerY) {
     let dir = Math.PI / 2; // Start direction (upwards)
     const rad = (a) => a * (Math.PI / 180);
     const stack = [];
@@ -218,11 +218,15 @@ function drawLSystem(gl, shaderProgram, instructions, angle) {
     let distanceAttributes = []; // Array for distance attributes
 
     // Parameters for line rendering
-    let thicknessBase = 0.0007; // Base thickness of lines
+    let initialThickness = 0.007; // Initial thickness of lines, larger to allow visible decrease
     let stepSize = 0.02; // Step size for 'F' movement
 
+    // Adjust the decrease factor for thickness as needed
+    let decreaseFactor = 0.0005; // Controls how quickly the thickness decreases
+
     // Starting position in normalized device coordinates (NDC)
-    let x = 0, y = -0.5; // Starting near the bottom-center of the screen
+    let x = centerX, y = centerY; // Starting near the bottom-center of the screen
+
 
     instructions.split('').forEach(cmd => {
         switch (cmd) {
@@ -231,8 +235,8 @@ function drawLSystem(gl, shaderProgram, instructions, angle) {
                 let newX = x + Math.cos(dir) * stepSize;
                 let newY = y + Math.sin(dir) * stepSize;
 
-                // Increase thickness based on distance
-                let thickness = thicknessBase + distance * 0.0003; // Adjust factor to scale thickness change
+                // Decrease thickness based on distance, ensuring it doesn't go below a minimum value
+                let thickness = Math.max(initialThickness - distance * decreaseFactor, 0.001); // Ensure thickness does not become zero
 
                 // Calculate perpendicular vector for thickness
                 let perpX = Math.cos(dir + Math.PI / 2) * thickness;
@@ -305,8 +309,7 @@ function drawLSystem(gl, shaderProgram, instructions, angle) {
     gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 2); // Draw the triangles
 }
 
-
-
+/* Takes in rules and axioms and generates a much longer string of directions for drawing the system */
 function generateLSystem(rules, axiom, depth) {
     let result = axiom;
     for (let i = 0; i < depth; i++) {
@@ -319,6 +322,12 @@ function generateLSystem(rules, axiom, depth) {
     return result;
 }
 
+
+/* On Desktop, show prompt.  This is currently not used, but we want to be able to show the user some prompt.
+   to encourage interaction. */
+
+const dragMessage = document.getElementById('dragMessage'); // The message element
+// Mouse down event to start drag
 
 /* Mobile Support Functions */
 
@@ -375,6 +384,139 @@ function adjustLayoutForMobile() {
       canvas.height = window.innerHeight;
   }
 }
+// Utility function to compile a shader
+function compileShader(gl, type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+    }
+    return shader;
+}
+
+// Function to initialize and update the shader program
+function initOrUpdateShaderProgram(gl, vsSource, fsSource) {
+    const vertexShader = compileShader(gl, gl.VERTEX_SHADER, vsSource);
+    const fragmentShader = compileShader(gl, gl.FRAGMENT_SHADER, fsSource);
+    const shaderProgram = gl.createProgram();
+    gl.attachShader(shaderProgram, vertexShader);
+    gl.attachShader(shaderProgram, fragmentShader);
+    gl.linkProgram(shaderProgram);
+
+    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+        alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
+        return null;
+    }
+    return shaderProgram;
+}
+
+function updateShaderProgram(gl) {
+    // Retrieve the shader source code from the textarea elements
+    const vertexShaderSource = document.getElementById('vertexShaderCode').value.trim();
+    const fragmentShaderSource = document.getElementById('fragmentShaderCode').value.trim();
+
+    debugger;
+    // Utilize the existing `loadShader` function to compile shaders
+    const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+    const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+
+    // Check for successful compilation
+    if (!vertexShader || !fragmentShader) {
+        console.error("Shader compilation failed.");
+        return;
+    }
+
+    // Use `initShaderProgram` to create and link the shader program
+    const shaderProgram = initShaderProgram(gl, vertexShader, fragmentShader);
+
+    // Check if the shader program was successfully created
+    if (!shaderProgram) {
+        console.error("Shader program initialization failed.");
+        return;
+    }
+
+    // Update the global or current shader program reference
+    currentShaderProgram = shaderProgram;
+
+    // Use the new shader program
+    gl.useProgram(currentShaderProgram);
+
+    // Log success
+    console.log("Shader program updated successfully.");
+
+    // Additional updates as needed, e.g., updating attribute/uniform locations
+}
+
+document.getElementById('updateShader').addEventListener('click', function() {
+    const gl = document.getElementById('glcanvas').getContext("webgl");
+    if (!gl) {
+        console.error("Unable to initialize WebGL. Your browser may not support it.");
+        return;
+    }
+    updateShaderProgram(gl);
+});
+
+
+document.getElementById('toggleShaderCode').addEventListener('click', function() {
+    const shaderCodeContent = document.getElementById('shaderCodeContent');
+    if (shaderCodeContent.style.display === "none") {
+        shaderCodeContent.style.display = "block";
+        this.textContent = "Hide Shader Code";
+    } else {
+        shaderCodeContent.style.display = "none";
+        this.textContent = "Show Shader Code";
+    }
+});
+
+/* Data Loading */
+function getUrlParams() {
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const params = {};
+    for (const [key, value] of urlParams) {
+        params[key] = value;
+    }
+    return params;
+}
+function prePopulateFields() {
+    const params = getUrlParams();
+
+    // Check if the parameters exist and set the form field values
+    if (params['angle']) {
+        document.getElementById('angle').value = params['angle'];
+    }
+    if (params['depth']) {
+        document.getElementById('depth').value = params['depth'];
+    }
+    if (params['axiom']) {
+        document.getElementById('axiom').value = params['axiom'];
+    }
+    if (params['rule']) {
+        document.getElementById('rule').value = params['rule'];
+    }
+    if (params['centerX']) {
+        document.getElementById('centerX').value = params['centerX'];
+    }
+    if (params['centerY']) {
+        document.getElementById('centerY').value = params['centerY'];
+    }
+    // Preload vertex shader code
+     if (params['vShader']) {
+         const vertexShaderCode = atob(params['vShader']); // Decode Base64
+         document.getElementById('vertexShaderCode').value = vertexShaderCode;
+     }
+
+     // Preload fragment shader code
+     if (params['fShader']) {
+         const fragmentShaderCode = atob(params['fShader']); // Decode Base64
+         document.getElementById('fragmentShaderCode').value = fragmentShaderCode;
+     }
+
+}
+
 
 // Global variables for angle and mouse position
 let angle = 25; // Default angle
@@ -384,6 +526,7 @@ let mouseX = 0; // Mouse X position
 
 function main() {
     adjustLayoutForMobile(); // Adjust layout based on the device type
+    prePopulateFields();
     const canvas = document.getElementById('glcanvas');
     // Set canvas dimensions to 70% of window width and 100% of window height
     canvas.width = window.innerWidth * (isMobileDevice() ? 1 : 0.7); // Adjust size based on device type
@@ -416,9 +559,12 @@ function main() {
         const canvasWidth = canvas.clientWidth;
         angle = (mouseX / canvasWidth) * 360; // Map mouse X to a 0-90 degree angle
         document.getElementById('angle').value = angle;
+        if(mouseX > canvasWidth) { drag = false; }
         if(drag === false) {
             drag = true;
-        } else { drag = false; }
+            dragMessage.style.display = 'none';
+        } else { drag = false; dragMessage.style.display = 'block';}
+
 
     });
 
@@ -428,8 +574,14 @@ function main() {
         const rect = canvas.getBoundingClientRect();
         mouseX = event.clientX - rect.left; // Update global mouseX
         const canvasWidth = canvas.clientWidth;
-        angle = (mouseX / canvasWidth) * 360; // Map mouse X to a 0-90 degree angle
+        angle = (mouseX / canvasWidth) * 90; // Map mouse X to a 0-90 degree angle
         document.getElementById('angle').value = angle;
+      }
+    });
+    canvas.addEventListener('mouseleave', function(event) {
+      if (drag) {
+        drag = false; // Reset drag state
+        dragMessage.style.display = 'none'; // Hide message
       }
     });
 
@@ -439,23 +591,24 @@ function main() {
     const recursionDepth = 5; // Adjust as needed
 
     document.getElementById('update').addEventListener('click', () => {
-      const axiom = document.getElementById('axiom').value;
-      const ruleInput = document.getElementById('rule').value;
-      const depth = parseInt(document.getElementById('depth').value, 10);
-      const angle = parseFloat(document.getElementById('angle').value);
+          // Retrieve values from the inputs
+        const angle = document.getElementById('angle').value;
+        const depth = document.getElementById('depth').value;
+        const axiom = document.getElementById('axiom').value;
+        const rule = document.getElementById('rule').value;
+        const centerX = parseFloat(document.getElementById('centerX').value);
+        const centerY = parseFloat(document.getElementById('centerY').value);
 
-      // Assuming your rule input format is "F=FF+[+F-F-F]-[-F+F+F]"
-      // Convert it into a rules object
-      const rules = ruleInput.split(';').reduce((acc, cur) => {
-          const parts = cur.split('=');
-          acc[parts[0]] = parts[1];
-          return acc;
-      }, {});
 
-      // Update global variables or directly use these in your draw function
-      //drawScene(axiom, rules, depth, angle); // Modify drawScene to accept these parameters
-      const instructions = generateLSystem(rules, axiom, recursionDepth);
-      drawLSystem(gl, shaderProgram, instructions, angle);
+        // Encode the rule parameter to ensure the URL is valid
+        const encodedRule = encodeURIComponent(rule);
+
+        // Construct the URL with GET parameters
+        const baseUrl = window.location.href.split('?')[0]; // Removes existing parameters if any
+        const newUrl = `${baseUrl}?centerX=${centerX}&centerY=${centerY}&angle=${angle}&depth=${depth}&axiom=${axiom}&rule=${encodedRule}`;
+
+        // Redirect the user to the new URL
+        window.location.href = newUrl;
     });
 
     function animate() {
@@ -466,10 +619,23 @@ function main() {
         const ruleStr = document.getElementById('rule').value;
         const depth = parseInt(document.getElementById('depth').value, 10);
         const angle = parseFloat(document.getElementById('angle').value);
+        const centerX = parseFloat(document.getElementById('centerX').value);
+        const centerY = parseFloat(document.getElementById('centerY').value);
         // Generate the L-system string with the current angle
-        const instructions = generateLSystem(rules, axiom, recursionDepth);
+
+        // Calculate Rules from Input
+        // Assuming the axiom format is "F=" and we're only using the first character
+        const predecessor = axiom.charAt(0); // Get the first character of the axiom input
+
+        // Create the rules object using the predecessor and the rule string
+        const rules = {};
+        rules[predecessor] = ruleStr; // Use the rule string as the transformation rule for the predecessor
+
+        const instructions = generateLSystem(rules, axiom, depth);
         // Draw the L-system
-        drawLSystem(gl, shaderProgram, instructions, angle);
+
+
+        drawLSystem(gl, shaderProgram, instructions, angle, centerX, centerY);
     }
 
     animate(); // Start the animation loop
