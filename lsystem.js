@@ -110,7 +110,7 @@ function initWebGL(canvas) {
 }
 
 
-
+/* Not currently used, but it creates a guide of the outermost bounds of the lsystem */
 function updateGlobalBounds(x, y) {
     globalBounds.minX = Math.min(globalBounds.minX, x);
     globalBounds.maxX = Math.max(globalBounds.maxX, x);
@@ -231,6 +231,7 @@ function generateLSystem(rules, axiom, depth) {
     }
     return result;
 }
+
 
 
 /* On Desktop, show prompt.  This is currently not used, but we want to be able to show the user some prompt.
@@ -506,7 +507,18 @@ function main() {
     const axiom = "F";
     const recursionDepth = 5; // Adjust as needed
 
-    document.getElementById('update').addEventListener('click', () => {
+
+    /* Sharing methods */
+    function getCanvasDataURL() {  /* For taking a snapshot and saving as an image */
+        const canvas = document.getElementById('glcanvas');
+        return canvas.toDataURL('image/png');
+    }
+    function createTweetLink(text, url) {
+      const tweetText = encodeURIComponent(text);
+      const tweetUrl = encodeURIComponent(url);
+      return `https://twitter.com/intent/tweet?text=${tweetText}&url=${tweetUrl}`;
+    }
+    function generateLink() {
           // Retrieve values from the inputs
         const angle = document.getElementById('angle').value;
         const depth = document.getElementById('depth').value;
@@ -526,8 +538,25 @@ function main() {
         const baseUrl = window.location.href.split('?')[0]; // Removes existing parameters if any
         const newUrl = `${baseUrl}?centerX=${centerX}&centerY=${centerY}&angle=${angle}&depth=${depth}&axiom=${encodedAxiom}&rule=${encodedRule}&length=${length}`;
 
+        return newUrl;
+    }
+    document.getElementById('tweet').addEventListener('click', () => {
+      // Example text and URL
+      const text = "Check out my L-system!";
+      // Assume `generateLink` is a function that generates a URL to your app with the current L-system parameters
+      const url = generateLink(); // Implement this based on your app's logic
+
+      // Generate the tweet link (omitting the direct image embedding)
+      const tweetLink = createTweetLink(text, url);
+
+      // Open the tweet link in a new tab/window
+      window.open(tweetLink, '_blank');
+    });
+
+    document.getElementById('update').addEventListener('click', () => {
+
         // Redirect the user to the new URL
-        window.location.href = newUrl;
+        window.location.href = generateLink();
     });
 
     function animate() {
