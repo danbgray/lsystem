@@ -43,35 +43,40 @@ B=+A-BB--B-A++A+B
       <button id="updateShader">Update Shaders</button>
         <textarea id="vertexShaderCode" rows="10" style="width: 100%;">
           attribute vec4 aVertexPosition;
-          attribute float aDistance;
-          varying highp float vDistance;
+          attribute float aDepth;
+          attribute float aAxiom; // New attribute for axiom
+
+          varying float vDepth;
+          varying float vAxiom; // Pass axiom to fragment shader
 
           void main(void) {
               gl_Position = aVertexPosition;
-              vDistance = aDistance;
+              vDepth = aDepth;
+              vAxiom = aAxiom;
           }
         </textarea>
         <textarea id="fragmentShaderCode" rows="10" style="width: 100%;">
           precision mediump float;
-          varying highp float vDistance;
+
+          varying float vDepth;
+          varying float vAxiom;
 
           void main(void) {
-              float modDistance = mod(vDistance, 1.0);
-              vec3 colorA = vec3(0.1, 0.2, 0.5); // Darker blue
-              vec3 colorB = vec3(0.4, 0.1, 0.2); // Darker pink
-              vec3 colorC = vec3(0.1, 0.5, 0.1); // Darker green
+              // Enhanced base color variation affected by axiom
+              // Cycle through colors more broadly
+              vec3 baseColor = vec3(sin(vAxiom * 0.2 + 1.0) * 0.5 + 0.5,
+                                    cos(vAxiom * 0.2 + 2.0) * 0.5 + 0.5,
+                                    sin(vAxiom * 0.2 + 3.0) * 0.5 + 0.5);
 
-              vec3 color;
-              if(modDistance < 0.33) {
-                  color = mix(colorA, colorB, modDistance / 0.33);
-              } else if(modDistance < 0.66) {
-                  color = mix(colorB, colorC, (modDistance - 0.33) / 0.33);
-              } else {
-                  color = mix(colorC, colorA, (modDistance - 0.66) / 0.33);
-              }
+              // Adjust color brightness based on depth to ensure visibility
+              // Use a non-linear transformation to avoid colors becoming too bright or too dark
+              float brightnessFactor = clamp((cos(vDepth / 100. - 1.0) + 1.0) * 0.5, 0.3, 0.9);
 
-              gl_FragColor = vec4(color, 1.); // Apply color with translucency
+              vec3 color = baseColor * brightnessFactor;
+
+              gl_FragColor = vec4(color, 1.0);
           }
+
         </textarea>
     </div>
 </div>

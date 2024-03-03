@@ -85,12 +85,12 @@ function loadShader(gl, type, source) {
 
     // Check if the shader was successfully compiled
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        alert('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
+        console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
         gl.deleteShader(shader);
-        return null;
+        return null; // Return null to indicate failure
     }
 
-    return shader;
+    return shader; // Return the compiled shader
 }
 
 function initWebGL(canvas) {
@@ -136,7 +136,6 @@ function drawLSystem(gl, shaderProgram, instructions, angle, centerX, centerY, l
     let depth = 0; // Initial depth
 
     let x = centerX, y = centerY; // Starting position
-
     instructions.split('').forEach(cmd => {
         if (cmd.match(/[A-Z]/)) { // Move forward and draw for uppercase letters
             let newX = x + Math.cos(dir) * length;
@@ -331,40 +330,12 @@ function initOrUpdateShaderProgram(gl, vsSource, fsSource) {
 }
 
 function updateShaderProgram(gl) {
-    // Retrieve the shader source code from the textarea elements
-    const vertexShaderSource = document.getElementById('vertexShaderCode').value.trim();
-    const fragmentShaderSource = document.getElementById('fragmentShaderCode').value.trim();
-
-    debugger;
-    // Utilize the existing `loadShader` function to compile shaders
-    const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-    const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-
-    // Check for successful compilation
-    if (!vertexShader || !fragmentShader) {
-        console.error("Shader compilation failed.");
-        return;
-    }
-
-    // Use `initShaderProgram` to create and link the shader program
-    const shaderProgram = initShaderProgram(gl, vertexShader, fragmentShader);
-
-    // Check if the shader program was successfully created
-    if (!shaderProgram) {
-        console.error("Shader program initialization failed.");
-        return;
-    }
-
-    // Update the global or current shader program reference
-    currentShaderProgram = shaderProgram;
-
-    // Use the new shader program
-    gl.useProgram(currentShaderProgram);
-
-    // Log success
-    console.log("Shader program updated successfully.");
-
-    // Additional updates as needed, e.g., updating attribute/uniform locations
+  const vsSource = document.getElementById('vertexShaderCode').value.trim();
+  const fsSource = document.getElementById('fragmentShaderCode').value.trim();
+  const shaderProgram = initShaderProgram(gl, vsSource, fsSource); // Assume this function is correctly implemented
+  gl.useProgram(shaderProgram);
+  console.log("Shader program updated successfully.");
+  return gl;
 }
 
 /* Data Loading */
@@ -428,12 +399,12 @@ function setupListeners(canvas) {
   /* Sets up event listeners, depends on having the canvas context already setup
      since the listeners will have an affect on the canvas, esp Shaders ( when complete ) */
   document.getElementById('updateShader').addEventListener('click', function() {
-      const gl = document.getElementById('glcanvas').getContext("webgl");
-      if (!gl) {
-          console.error("Unable to initialize WebGL. Your browser may not support it.");
-          return;
-      }
-      updateShaderProgram(gl);
+      const gl = document.querySelector('#glcanvas').getContext('webgl');
+       if (!gl) {
+           console.error("WebGL context not available.");
+           return;
+       }
+       updateShaderProgram(gl); // Pass the WebGL context
   });
 
 
@@ -604,7 +575,7 @@ function main() {
         // Draw the L-system
 
 
-        drawLSystem(gl, shaderProgram, instructions, angle, centerX, centerY, length);
+        drawLSystem(gl, currentShaderProgram, instructions, angle, centerX, centerY, length);
     }
 
     animate(); // Start the animation loop
