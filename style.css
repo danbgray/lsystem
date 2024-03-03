@@ -22,7 +22,7 @@ button {
 button:hover {
     background-color: #4B7CB0;
 }
-
+#glcanvas {}
 #controls {
   width:25%; float:right;
 }

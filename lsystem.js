@@ -15,6 +15,9 @@
 // Global reference to the shader program
 let currentShaderProgram = null;
 
+// Global bounds to record the size of our drawing if we want to re-center.
+let globalBounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+
 // Vertex shader program and WebGL initialization code
 let vsSource = `
 attribute vec4 aVertexPosition;
@@ -106,47 +109,17 @@ function initWebGL(canvas) {
     return {gl, shaderProgram};
 }
 
-/* Utility Functions */
-function calculateBounds(instructions, angle) {
-    let x = 0, y = 0, dir = Math.PI / 2; // Starting conditions
-    const rad = (a) => a * (Math.PI / 180);
-    const stack = [];
-    let minX = 0, maxX = 0, minY = 0, maxY = 0;
 
-    instructions.split('').forEach((cmd) => {
-        switch(cmd) {
-            case 'F':
-                x += Math.cos(dir);
-                y += Math.sin(dir);
-                minX = Math.min(minX, x);
-                maxX = Math.max(maxX, x);
-                minY = Math.min(minY, y);
-                maxY = Math.max(maxY, y);
-                break;
-            case '+':
-                dir += rad(angle);
-                break;
-            case '-':
-                dir -= rad(angle);
-                break;
-            case '[':
-                stack.push({x, y, dir});
-                break;
-            case ']':
-                const state = stack.pop();
-                x = state.x;
-                y = state.y;
-                dir = state.dir;
-                break;
-        }
-    });
 
-    return {minX, maxX, minY, maxY};
+function updateGlobalBounds(x, y) {
+    globalBounds.minX = Math.min(globalBounds.minX, x);
+    globalBounds.maxX = Math.max(globalBounds.maxX, x);
+    globalBounds.minY = Math.min(globalBounds.minY, y);
+    globalBounds.maxY = Math.max(globalBounds.maxY, y);
 }
 
-
 /* Core Functions */
-function drawLSystem(gl, shaderProgram, instructions, angle, centerX, centerY) {
+function drawLSystem(gl, shaderProgram, instructions, angle, centerX, centerY, length) {
     let dir = Math.PI / 2; // Start direction (upwards)
     const rad = (a) => a * (Math.PI / 180);
     const stack = [];
@@ -156,7 +129,7 @@ function drawLSystem(gl, shaderProgram, instructions, angle, centerX, centerY) {
 
     // Parameters for line rendering
     let initialThickness = 0.007; // Initial thickness of lines, larger to allow visible decrease
-    let stepSize = 0.02; // Step size for 'F' movement
+    let stepSize = length; // Step size for 'F' movement
 
     // Adjust the decrease factor for thickness as needed
     let decreaseFactor = 0.0005; // Controls how quickly the thickness decreases
@@ -266,10 +239,10 @@ function generateLSystem(rules, axiom, depth) {
 const dragMessage = document.getElementById('dragMessage'); // The message element
 // Mouse down event to start drag
 
+// Bind the "Scale to Fit" button click event
 /* Mobile Support Functions */
-
 /* Mobile Support */
-  function setupSensors() {
+function setupSensors() {
         // Check for DeviceOrientationEvent support and request permission on iOS 13+
         if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
             DeviceOrientationEvent.requestPermission()
@@ -387,27 +360,6 @@ function updateShaderProgram(gl) {
     // Additional updates as needed, e.g., updating attribute/uniform locations
 }
 
-document.getElementById('updateShader').addEventListener('click', function() {
-    const gl = document.getElementById('glcanvas').getContext("webgl");
-    if (!gl) {
-        console.error("Unable to initialize WebGL. Your browser may not support it.");
-        return;
-    }
-    updateShaderProgram(gl);
-});
-
-
-document.getElementById('toggleShaderCode').addEventListener('click', function() {
-    const shaderCodeContent = document.getElementById('shaderCodeContent');
-    if (shaderCodeContent.style.display === "none") {
-        shaderCodeContent.style.display = "block";
-        this.textContent = "Hide Shader Code";
-    } else {
-        shaderCodeContent.style.display = "none";
-        this.textContent = "Show Shader Code";
-    }
-});
-
 /* Data Loading */
 function getUrlParams() {
     const queryString = window.location.search;
@@ -440,6 +392,10 @@ function prePopulateFields() {
     if (params['centerY']) {
         document.getElementById('centerY').value = params['centerY'];
     }
+    if (params['length']) {
+        document.getElementById('length').value = params['length'];
+    }
+
     // Preload vertex shader code
      if (params['vShader']) {
          const vertexShaderCode = atob(params['vShader']); // Decode Base64
@@ -489,12 +445,35 @@ function main() {
 
     /* Desktop Support */
 
+    /* Setup Event Listeners */
+
+    document.getElementById('updateShader').addEventListener('click', function() {
+        const gl = document.getElementById('glcanvas').getContext("webgl");
+        if (!gl) {
+            console.error("Unable to initialize WebGL. Your browser may not support it.");
+            return;
+        }
+        updateShaderProgram(gl);
+    });
+
+
+    document.getElementById('toggleShaderCode').addEventListener('click', function() {
+        const shaderCodeContent = document.getElementById('shaderCodeContent');
+        if (shaderCodeContent.style.display === "none") {
+            shaderCodeContent.style.display = "block";
+            this.textContent = "Hide Shader Code";
+        } else {
+            shaderCodeContent.style.display = "none";
+            this.textContent = "Show Shader Code";
+        }
+    });
+
     // Setup mouse move event listener to update the angle based on mouse position
     canvas.addEventListener('mousedown', (event) => {
         const rect = canvas.getBoundingClientRect();
         mouseX = event.clientX - rect.left; // Update global mouseX
         const canvasWidth = canvas.clientWidth;
-        angle = (mouseX / canvasWidth) * 360; // Map mouse X to a 0-90 degree angle
+        angle = (mouseX / canvasWidth) * 90; // Map mouse X to a 0-90 degree angle
         document.getElementById('angle').value = angle;
         if(mouseX > canvasWidth) { drag = false; }
         if(drag === false) {
@@ -533,8 +512,10 @@ function main() {
         const depth = document.getElementById('depth').value;
         const axiom = document.getElementById('axiom').value;
         const rule = document.getElementById('rule').value;
+        const length = parseFloat(document.getElementById('length').value);
         const centerX = parseFloat(document.getElementById('centerX').value);
         const centerY = parseFloat(document.getElementById('centerY').value);
+
 
 
         // Encode the rule parameter to ensure the URL is valid
@@ -542,7 +523,7 @@ function main() {
 
         // Construct the URL with GET parameters
         const baseUrl = window.location.href.split('?')[0]; // Removes existing parameters if any
-        const newUrl = `${baseUrl}?centerX=${centerX}&centerY=${centerY}&angle=${angle}&depth=${depth}&axiom=${axiom}&rule=${encodedRule}`;
+        const newUrl = `${baseUrl}?centerX=${centerX}&centerY=${centerY}&angle=${angle}&depth=${depth}&axiom=${axiom}&rule=${encodedRule}&length=${length}`;
 
         // Redirect the user to the new URL
         window.location.href = newUrl;
@@ -555,6 +536,7 @@ function main() {
         const axiom = document.getElementById('axiom').value;
         const ruleStr = document.getElementById('rule').value;
         const depth = parseInt(document.getElementById('depth').value, 10);
+        const length = parseFloat(document.getElementById('length').value, 0.2);
         const angle = parseFloat(document.getElementById('angle').value);
         const centerX = parseFloat(document.getElementById('centerX').value);
         const centerY = parseFloat(document.getElementById('centerY').value);
@@ -572,7 +554,7 @@ function main() {
         // Draw the L-system
 
 
-        drawLSystem(gl, shaderProgram, instructions, angle, centerX, centerY);
+        drawLSystem(gl, shaderProgram, instructions, angle, centerX, centerY, length);
     }
 
     animate(); // Start the animation loop
