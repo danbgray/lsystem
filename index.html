@@ -10,20 +10,23 @@
     <h2>L-System Controls</h2>
     <div>
         <label for="axiom">Axiom:</label>
-        <input type="text" id="axiom" value="F">
+        <input type="text" id="axiom" value="A">
     </div>
-    <div>
-        <label for="rule">Rule (F=):</label>
-        <input type="text" id="rule" value="FF+[+F-F-F]-[-F+F+F]">
-    </div>
+    <div style="margin-bottom: 20px;">
+       <label for="rules">Rules (format: A=F+F--F+F):</label>
+       <textarea id="rules" rows="5" style="width: 100%;">
+         A=A-B--B+A++AA+B-
+         B=+A-BB--B-A++A+B
+       </textarea>
+   </div>
     <div>
         <label for="depth">Recursion Depth:</label>
-        <input type="number" id="depth" value="5">
+        <input type="number" id="depth" value="5" min="1" max="8">
     </div>
     <div id="centerControl">
       <label for="centerX">Center</label>
-      <input type="number" id="centerX" value="0" step="any">
-      <input type="number" id="centerY" value="0" step="any">
+      <input type="number" id="centerX" value="-.5" step="any">
+      <input type="number" id="centerY" value=".5" step="any">
     </div>
     <div>
         <label for="length">Segment Length:</label>
@@ -31,7 +34,7 @@
     </div>
     <div>
         <label for="angle">Angle:</label>
-        <input type="number" id="angle" value="25">
+        <input type="number" id="angle" value="60">
     </div>
 
     <hr />

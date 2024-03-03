@@ -21,37 +21,43 @@ let globalBounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Inf
 // Vertex shader program and WebGL initialization code
 let vsSource = `
 attribute vec4 aVertexPosition;
-attribute float aDistance;
-varying highp float vDistance;
+attribute float aDepth;
+attribute float aAxiom; // New attribute for axiom
+
+varying float vDepth;
+varying float vAxiom; // Pass axiom to fragment shader
 
 void main(void) {
     gl_Position = aVertexPosition;
-    vDistance = aDistance;
+    vDepth = aDepth;
+    vAxiom = aAxiom;
 }
+
 `;
 
 // Fragment shader program
 let fsSource = `
 precision mediump float;
-varying highp float vDistance;
+
+varying float vDepth;
+varying float vAxiom;
 
 void main(void) {
-    float modDistance = mod(vDistance, 1.0);
-    vec3 colorA = vec3(0.1, 0.2, 0.5); // Darker blue
-    vec3 colorB = vec3(0.4, 0.1, 0.2); // Darker pink
-    vec3 colorC = vec3(0.1, 0.5, 0.1); // Darker green
+    // Enhanced base color variation affected by axiom
+    // Cycle through colors more broadly
+    vec3 baseColor = vec3(sin(vAxiom * 0.2 + 1.0) * 0.5 + 0.5,
+                          cos(vAxiom * 0.2 + 2.0) * 0.5 + 0.5,
+                          sin(vAxiom * 0.2 + 3.0) * 0.5 + 0.5);
 
-    vec3 color;
-    if(modDistance < 0.33) {
-        color = mix(colorA, colorB, modDistance / 0.33);
-    } else if(modDistance < 0.66) {
-        color = mix(colorB, colorC, (modDistance - 0.33) / 0.33);
-    } else {
-        color = mix(colorC, colorA, (modDistance - 0.66) / 0.33);
-    }
+    // Adjust color brightness based on depth to ensure visibility
+    // Use a non-linear transformation to avoid colors becoming too bright or too dark
+    float brightnessFactor = clamp((cos(vDepth / 100. - 1.0) + 1.0) * 0.5, 0.3, 0.9);
 
-    gl_FragColor = vec4(color, 1.); // Apply color with translucency
+    vec3 color = baseColor * brightnessFactor;
+
+    gl_FragColor = vec4(color, 1.0);
 }
+
 
 `;
 function initShaderProgram(gl, vsSource, fsSource) {
@@ -119,105 +125,106 @@ function updateGlobalBounds(x, y) {
 }
 
 /* Core Functions */
-function drawLSystem(gl, shaderProgram, instructions, angle, centerX, centerY, length) {
+function drawLSystem(gl, shaderProgram, instructions, angle, centerX, centerY, length, initialThickness) {
     let dir = Math.PI / 2; // Start direction (upwards)
-    const rad = (a) => a * (Math.PI / 180);
+    const rad = (a) => a * (Math.PI / 180); // Convert degrees to radians for rotation
     const stack = [];
     let vertices = [];
-    let distance = 0; // Initialize distance
-    let distanceAttributes = []; // Array for distance attributes
+    let depthAttributes = []; // For color variation based on 'depth'
+    let axiomAttributes = []; // New array for axiom attributes for use with the shaders.
 
-    // Parameters for line rendering
-    let initialThickness = 0.007; // Initial thickness of lines, larger to allow visible decrease
-    let stepSize = length; // Step size for 'F' movement
+    let depth = 0; // Initial depth
 
-    // Adjust the decrease factor for thickness as needed
-    let decreaseFactor = 0.0005; // Controls how quickly the thickness decreases
-
-    // Starting position in normalized device coordinates (NDC)
-    let x = centerX, y = centerY; // Starting near the bottom-center of the screen
-
+    let x = centerX, y = centerY; // Starting position
 
     instructions.split('').forEach(cmd => {
-        switch (cmd) {
-            case 'F':
-                // Calculate next point
-                let newX = x + Math.cos(dir) * stepSize;
-                let newY = y + Math.sin(dir) * stepSize;
+        if (cmd.match(/[A-Z]/)) { // Move forward and draw for uppercase letters
+            let newX = x + Math.cos(dir) * length;
+            let newY = y + Math.sin(dir) * length;
 
-                // Decrease thickness based on distance, ensuring it doesn't go below a minimum value
-                let thickness = Math.max(initialThickness - distance * decreaseFactor, 0.001); // Ensure thickness does not become zero
+            // Add vertices for line
+            vertices.push(x, y, newX, newY);
+            depthAttributes.push(depth, depth); // Assuming color/depth is applied per vertex
+            depth += 1;
+             let axiomIndex = cmd.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
+             axiomAttributes.push(axiomIndex, axiomIndex); // For start and end of the line
 
-                // Calculate perpendicular vector for thickness
-                let perpX = Math.cos(dir + Math.PI / 2) * thickness;
-                let perpY = Math.sin(dir + Math.PI / 2) * thickness;
-
-                // Generate quad vertices (two triangles) for the "thick line"
-                vertices.push(
-                    x - perpX, y - perpY,
-                    newX - perpX, newY - perpY,
-                    x + perpX, y + perpY,
-                    x + perpX, y + perpY,
-                    newX - perpX, newY - perpY,
-                    newX + perpX, newY + perpY
-                );
-
-                // Update distance attributes for each vertex of the quad
-                for (let i = 0; i < 6; i++) {
-                    distanceAttributes.push(distance);
-                }
-
-                distance += stepSize; // Increment distance for color variation
-                x = newX;
-                y = newY;
-                break;
-            case '+':
-                dir -= rad(angle); // Turn right by 'angle' degrees
-                break;
-            case '-':
-                dir += rad(angle); // Turn left by 'angle' degrees
-                break;
-            case '[':
-                stack.push({x, y, dir, distance}); // Save state
-                break;
-            case ']':
-                { // Pop state
-                    let popped = stack.pop();
-                    x = popped.x;
-                    y = popped.y;
-                    dir = popped.dir;
-                    distance = popped.distance; // Restore distance for color continuity
-                }
-                break;
-            // Implement other cases if needed
+            x = newX; // Update current position
+            y = newY;
+        } else if (cmd.match(/[a-z]/)) { // Move forward without drawing for lowercase letters
+            x += Math.cos(dir) * length; // Update current position
+            y += Math.sin(dir) * length;
+        } else {
+            switch(cmd) {
+                case '+': // Turn right
+                    dir += rad(angle);
+                    break;
+                case '-': // Turn left
+                    dir -= rad(angle);
+                    break;
+                case '[': // Save state
+                    stack.push({x, y, dir, depth});
+                    depth++; // Increment depth
+                    break;
+                case ']': // Restore state
+                    ({x, y, dir, depth} = stack.pop());
+                    break;
+            }
         }
     });
 
-    // Bind and set up vertex buffer
+    // Call drawLines to draw the computed vertices
+    if(vertices.length > 0) {
+        drawLines(gl, shaderProgram, vertices, depthAttributes, axiomAttributes);
+    }
+}
+
+
+function drawLines(gl, shaderProgram, vertices, depthAttributes, axiomAttributes) {
+    // Vertex buffer setup
     const vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 
-    // Bind and set up distance buffer
-    const distanceBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, distanceBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(distanceAttributes), gl.STATIC_DRAW);
+    // Vertex position attribute setup
+    const positionAttribLocation = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
+    gl.vertexAttribPointer(positionAttribLocation, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(positionAttribLocation);
 
-    // Shader attribute locations
-    const vertexPosition = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
-    gl.enableVertexAttribArray(vertexPosition);
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.vertexAttribPointer(vertexPosition, 2, gl.FLOAT, false, 0, 0);
+    // Depth (color variation) buffer setup
+    const depthBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, depthBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(depthAttributes), gl.STATIC_DRAW);
 
-    const distanceAttribLocation = gl.getAttribLocation(shaderProgram, 'aDistance');
-    gl.enableVertexAttribArray(distanceAttribLocation);
-    gl.bindBuffer(gl.ARRAY_BUFFER, distanceBuffer);
-    gl.vertexAttribPointer(distanceAttribLocation, 1, gl.FLOAT, false, 0, 0);
+    // Depth attribute setup
+    const depthAttribLocation = gl.getAttribLocation(shaderProgram, 'aDepth');
+    gl.vertexAttribPointer(depthAttribLocation, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(depthAttribLocation);
 
-    // Draw
+    // Axiom attribute setup
+    const axiomBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, axiomBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(axiomAttributes), gl.STATIC_DRAW);
+
+    // Axiom attribute setup
+    const axiomAttribLocation = gl.getAttribLocation(shaderProgram, 'aAxiom');
+    gl.vertexAttribPointer(axiomAttribLocation, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(axiomAttribLocation);
+
+    // Use the shader program
     gl.useProgram(shaderProgram);
-    gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 2); // Draw the triangles
+
+    // Draw the lines
+    gl.drawArrays(gl.LINES, 0, vertices.length / 2); // Adjust based on your geometry
+
+    // Cleanup
+    gl.disableVertexAttribArray(positionAttribLocation);
+    gl.disableVertexAttribArray(depthAttribLocation);
+    gl.disableVertexAttribArray(axiomAttribLocation);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
 }
+
+
 
 /* Takes in rules and axioms and generates a much longer string of directions for drawing the system */
 function generateLSystem(rules, axiom, depth) {
@@ -237,7 +244,6 @@ function generateLSystem(rules, axiom, depth) {
 /* On Desktop, show prompt.  This is currently not used, but we want to be able to show the user some prompt.
    to encourage interaction. */
 
-const dragMessage = document.getElementById('dragMessage'); // The message element
 // Mouse down event to start drag
 
 // Bind the "Scale to Fit" button click event
@@ -384,8 +390,8 @@ function prePopulateFields() {
     if (params['axiom']) {
         document.getElementById('axiom').value = params['axiom'];
     }
-    if (params['rule']) {
-        document.getElementById('rule').value = params['rule'];
+    if (params['rules']) {
+        document.getElementById('rules').value = params['rules'];
     }
     if (params['centerX']) {
         document.getElementById('centerX').value = params['centerX'];
@@ -415,8 +421,64 @@ function prePopulateFields() {
 // Global variables for angle and mouse position
 let angle = 25; // Default angle
 let mouseX = 0; // Mouse X position
+let drag = false;
+
+function setupListeners(canvas) {
+  const dragMessage = document.getElementById('dragMessage'); // The message element
+  /* Sets up event listeners, depends on having the canvas context already setup
+     since the listeners will have an affect on the canvas, esp Shaders ( when complete ) */
+  document.getElementById('updateShader').addEventListener('click', function() {
+      const gl = document.getElementById('glcanvas').getContext("webgl");
+      if (!gl) {
+          console.error("Unable to initialize WebGL. Your browser may not support it.");
+          return;
+      }
+      updateShaderProgram(gl);
+  });
 
 
+  document.getElementById('toggleShaderCode').addEventListener('click', function() {
+      const shaderCodeContent = document.getElementById('shaderCodeContent');
+      if (shaderCodeContent.style.display === "none") {
+          shaderCodeContent.style.display = "block";
+          this.textContent = "Hide Shader Code";
+      } else {
+          shaderCodeContent.style.display = "none";
+          this.textContent = "Show Shader Code";
+      }
+  });
+
+  // Setup mouse move event listener to update the angle based on mouse position
+  canvas.addEventListener('mousedown', (event) => {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = event.clientX - rect.left; // Update global mouseX
+      const canvasWidth = canvas.clientWidth;
+      angle = ((mouseX-canvasWidth/2) / canvasWidth) * 90; // Map mouse X to a 0-90 degree angle
+      document.getElementById('angle').value = angle;
+      if(mouseX > canvasWidth) { drag = false; }
+      if(drag === false) {
+          drag = true;
+          dragMessage.style.display = 'none';
+      } else { drag = false; dragMessage.style.display = 'block';}
+  });
+
+  // Mobile sup
+  canvas.addEventListener('mousemove', (event) => {
+    if (drag) {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = event.clientX - rect.left; // Update global mouseX
+      const canvasWidth = canvas.clientWidth;
+      angle = ((mouseX-canvasWidth/2) / canvasWidth) * 90; // Map mouse X to a 0-90 degree angle
+      document.getElementById('angle').value = angle;
+    }
+  });
+  canvas.addEventListener('mouseleave', function(event) {
+    if (drag) {
+      drag = false; // Reset drag state
+      dragMessage.style.display = 'none'; // Hide message
+    }
+  });
+}
 
 function main() {
     adjustLayoutForMobile(); // Adjust layout based on the device type
@@ -447,64 +509,22 @@ function main() {
     /* Desktop Support */
 
     /* Setup Event Listeners */
+    setupListeners(canvas);
 
-    document.getElementById('updateShader').addEventListener('click', function() {
-        const gl = document.getElementById('glcanvas').getContext("webgl");
-        if (!gl) {
-            console.error("Unable to initialize WebGL. Your browser may not support it.");
-            return;
-        }
-        updateShaderProgram(gl);
-    });
-
-
-    document.getElementById('toggleShaderCode').addEventListener('click', function() {
-        const shaderCodeContent = document.getElementById('shaderCodeContent');
-        if (shaderCodeContent.style.display === "none") {
-            shaderCodeContent.style.display = "block";
-            this.textContent = "Hide Shader Code";
-        } else {
-            shaderCodeContent.style.display = "none";
-            this.textContent = "Show Shader Code";
-        }
-    });
-
-    // Setup mouse move event listener to update the angle based on mouse position
-    canvas.addEventListener('mousedown', (event) => {
-        const rect = canvas.getBoundingClientRect();
-        mouseX = event.clientX - rect.left; // Update global mouseX
-        const canvasWidth = canvas.clientWidth;
-        angle = (mouseX / canvasWidth) * 90; // Map mouse X to a 0-90 degree angle
-        document.getElementById('angle').value = angle;
-        if(mouseX > canvasWidth) { drag = false; }
-        if(drag === false) {
-            drag = true;
-            dragMessage.style.display = 'none';
-        } else { drag = false; dragMessage.style.display = 'block';}
-
-
-    });
-
-    // Mobile sup
-    canvas.addEventListener('mousemove', (event) => {
-      if (drag) {
-        const rect = canvas.getBoundingClientRect();
-        mouseX = event.clientX - rect.left; // Update global mouseX
-        const canvasWidth = canvas.clientWidth;
-        angle = (mouseX / canvasWidth) * 90; // Map mouse X to a 0-90 degree angle
-        document.getElementById('angle').value = angle;
-      }
-    });
-    canvas.addEventListener('mouseleave', function(event) {
-      if (drag) {
-        drag = false; // Reset drag state
-        dragMessage.style.display = 'none'; // Hide message
-      }
-    });
-
+    function parseRules(el) {
+      /* Takes in a string and returns a rule dict */
+      rulesInput = el.split("\n");
+      rules = {};
+      rulesInput.forEach(rule => {
+          let parts = rule.split('=');
+          if (parts.length === 2) {
+              rules[parts[0].trim()] = parts[1].trim();
+          }
+      });
+      return rules;
+    }
+    rules = parseRules(document.getElementById('rules').value);
     // L-system setup
-    const rules = {"F": document.getElementById('rule').value};
-    const axiom = "F";
     const recursionDepth = 5; // Adjust as needed
 
 
@@ -523,7 +543,7 @@ function main() {
         const angle = document.getElementById('angle').value;
         const depth = document.getElementById('depth').value;
         const axiom = document.getElementById('axiom').value;
-        const rule = document.getElementById('rule').value;
+        const rule = document.getElementById('rules').value;
         const length = parseFloat(document.getElementById('length').value);
         const centerX = parseFloat(document.getElementById('centerX').value);
         const centerY = parseFloat(document.getElementById('centerY').value);
@@ -536,7 +556,7 @@ function main() {
 
         // Construct the URL with GET parameters
         const baseUrl = window.location.href.split('?')[0]; // Removes existing parameters if any
-        const newUrl = `${baseUrl}?centerX=${centerX}&centerY=${centerY}&angle=${angle}&depth=${depth}&axiom=${encodedAxiom}&rule=${encodedRule}&length=${length}`;
+        const newUrl = `${baseUrl}?centerX=${centerX}&centerY=${centerY}&angle=${angle}&depth=${depth}&axiom=${encodedAxiom}&rules=${encodedRule}&length=${length}`;
 
         return newUrl;
     }
@@ -564,7 +584,7 @@ function main() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the canvas
 
         const axiom = document.getElementById('axiom').value;
-        const ruleStr = document.getElementById('rule').value;
+        const ruleStr = document.getElementById('rules').value;
         const depth = parseInt(document.getElementById('depth').value);
         const length = parseFloat(document.getElementById('length').value);
         const angle = parseFloat(document.getElementById('angle').value);
@@ -577,9 +597,7 @@ function main() {
         const predecessor = axiom.charAt(0); // Get the first character of the axiom input
 
         // Create the rules object using the predecessor and the rule string
-        const rules = {};
-        rules[predecessor] = ruleStr; // Use the rule string as the transformation rule for the predecessor
-
+        const rules = parseRules(ruleStr);
         const instructions = generateLSystem(rules, axiom, depth);
         // Draw the L-system
 

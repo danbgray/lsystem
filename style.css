@@ -62,3 +62,31 @@ button:hover {
     border-radius: 5px;
     z-index: 100; /* Ensure it's above other elements */
 }
+
+#controls {
+    max-width: 600px;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background-color: #fafafa;
+}
+
+#controls h2 {
+    color: #333;
+}
+
+#controls input[type="text"],
+#controls input[type="number"],
+#controls textarea {
+    padding: 8px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+#controls button:hover {
+    background-color: #45a049;
+}
