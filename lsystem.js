@@ -43,27 +43,20 @@ varying float vDepth;
 varying float vAxiom;
 
 void main(void) {
-    // Generate a broader range of base colors, including the desired shades
-    vec3 baseColor = vec3(sin(vAxiom * 0.15 + 1.0) * 0.5 + 0.5,  // Red to Orange spectrum
-                          cos(vAxiom * 0.15 + 2.0) * 0.5 + 0.5,  // Green spectrum
-                          sin(vAxiom * 0.15 + 4.0) * 0.5 + 0.5); // Blue spectrum
+    // Enhanced base color variation affected by axiom
+    // Cycle through colors more broadly
+    vec3 baseColor = vec3(sin(vAxiom * 0.2 + 1.0) * 0.5 + 0.5,
+                          cos(vAxiom * 0.2 + 2.0) * 0.5 + 0.5,
+                          sin(vAxiom * 0.2 + 3.0) * 0.5 + 0.5);
 
-    // Introduce more variation and ensure overall brightness
-    float brightnessFactor = clamp((cos(vDepth / 150. - 1.0) + 1.2) * 0.4, 0.5, 1.0);
-
-    // Mix in additional colors for variety
-    vec3 additionalColor1 = vec3(0.8, 0.4, 0.2); // Warm Orange/Brown
-    vec3 additionalColor2 = vec3(0.2, 0.5, 0.3); // Cooler Green
-    vec3 additionalColor3 = vec3(0.3, 0.3, 0.7); // Soft Blue
-
-    // Weighted mix to add hints of additional colors
-    baseColor = normalize(mix(mix(mix(baseColor, additionalColor1, 0.2), additionalColor2, 0.15), additionalColor3, 0.1));
+    // Adjust color brightness based on depth to ensure visibility
+    // Use a non-linear transformation to avoid colors becoming too bright or too dark
+    float brightnessFactor = clamp((cos(vDepth / 100. - 1.0) + 1.0) * 0.5, 0.3, 0.9);
 
     vec3 color = baseColor * brightnessFactor;
 
     gl_FragColor = vec4(color, 1.0);
 }
-
 
 
 `;
@@ -398,7 +391,7 @@ function prePopulateFields() {
         document.getElementById('axiom').value = params['axiom'];
     }
     if (params['rules']) {
-        document.getElementById('rules').value = params['rules'];
+        document.getElementById('rule').value = params['rules'];
     }
     if (params['centerX']) {
         document.getElementById('centerX').value = params['centerX'];
@@ -526,11 +519,16 @@ function main() {
           let parts = rule.split('=');
           if (parts.length === 2) {
               rules[parts[0].trim()] = parts[1].trim();
+          } else {
+            rules["F"] = parts[1].trim();
           }
       });
       return rules;
     }
-    rules = parseRules(document.getElementById('rules').value);
+    // Facilitate a default 'F=' rule if none is used.
+
+
+    rules = parseRules(document.getElementById('rule').value);
     // L-system setup
     const recursionDepth = 5; // Adjust as needed
 
@@ -550,7 +548,7 @@ function main() {
         const angle = document.getElementById('angle').value;
         const depth = document.getElementById('depth').value;
         const axiom = document.getElementById('axiom').value;
-        const rule = document.getElementById('rules').value;
+        const rule = document.getElementById('rule').value;
         const length = parseFloat(document.getElementById('length').value);
         const centerX = parseFloat(document.getElementById('centerX').value);
         const centerY = parseFloat(document.getElementById('centerY').value);
@@ -591,7 +589,7 @@ function main() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the canvas
 
         const axiom = document.getElementById('axiom').value;
-        const ruleStr = document.getElementById('rules').value;
+        const ruleStr = document.getElementById('rule').value;
         const depth = parseInt(document.getElementById('depth').value);
         const length = parseFloat(document.getElementById('length').value);
         const angle = parseFloat(document.getElementById('angle').value);
