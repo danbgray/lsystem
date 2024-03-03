@@ -523,7 +523,7 @@ function main() {
 
         // Construct the URL with GET parameters
         const baseUrl = window.location.href.split('?')[0]; // Removes existing parameters if any
-        const newUrl = `${baseUrl}?centerX=${centerX}&centerY=${centerY}&angle=${angle}&depth=${depth}&axiom=${axiom}&rule=${encodedRule}&length=${length}`;
+        const newUrl = encodeURI(`${baseUrl}?centerX=${centerX}&centerY=${centerY}&angle=${angle}&depth=${depth}&axiom=${axiom}&rule=${encodedRule}&length=${length}`);
 
         // Redirect the user to the new URL
         window.location.href = newUrl;
