@@ -520,10 +520,11 @@ function main() {
 
         // Encode the rule parameter to ensure the URL is valid
         const encodedRule = encodeURIComponent(rule);
+        const encodedAxiom = encodeURIComponent(axiom);
 
         // Construct the URL with GET parameters
         const baseUrl = window.location.href.split('?')[0]; // Removes existing parameters if any
-        const newUrl = encodeURI(`${baseUrl}?centerX=${centerX}&centerY=${centerY}&angle=${angle}&depth=${depth}&axiom=${axiom}&rule=${encodedRule}&length=${length}`);
+        const newUrl = `${baseUrl}?centerX=${centerX}&centerY=${centerY}&angle=${angle}&depth=${depth}&axiom=${encodedAxiom}&rule=${encodedRule}&length=${length}`;
 
         // Redirect the user to the new URL
         window.location.href = newUrl;
