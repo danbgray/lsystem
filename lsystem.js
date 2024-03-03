@@ -565,8 +565,8 @@ function main() {
 
         const axiom = document.getElementById('axiom').value;
         const ruleStr = document.getElementById('rule').value;
-        const depth = parseInt(document.getElementById('depth').value, 10);
-        const length = parseFloat(document.getElementById('length').value, 0.2);
+        const depth = parseInt(document.getElementById('depth').value);
+        const length = parseFloat(document.getElementById('length').value);
         const angle = parseFloat(document.getElementById('angle').value);
         const centerX = parseFloat(document.getElementById('centerX').value);
         const centerY = parseFloat(document.getElementById('centerY').value);
