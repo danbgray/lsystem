@@ -43,20 +43,27 @@ varying float vDepth;
 varying float vAxiom;
 
 void main(void) {
-    // Enhanced base color variation affected by axiom
-    // Cycle through colors more broadly
-    vec3 baseColor = vec3(sin(vAxiom * 0.2 + 1.0) * 0.5 + 0.5,
-                          cos(vAxiom * 0.2 + 2.0) * 0.5 + 0.5,
-                          sin(vAxiom * 0.2 + 3.0) * 0.5 + 0.5);
+    // Generate a broader range of base colors, including the desired shades
+    vec3 baseColor = vec3(sin(vAxiom * 0.15 + 1.0) * 0.5 + 0.5,  // Red to Orange spectrum
+                          cos(vAxiom * 0.15 + 2.0) * 0.5 + 0.5,  // Green spectrum
+                          sin(vAxiom * 0.15 + 4.0) * 0.5 + 0.5); // Blue spectrum
 
-    // Adjust color brightness based on depth to ensure visibility
-    // Use a non-linear transformation to avoid colors becoming too bright or too dark
-    float brightnessFactor = clamp((cos(vDepth / 100. - 1.0) + 1.0) * 0.5, 0.3, 0.9);
+    // Introduce more variation and ensure overall brightness
+    float brightnessFactor = clamp((cos(vDepth / 150. - 1.0) + 1.2) * 0.4, 0.5, 1.0);
+
+    // Mix in additional colors for variety
+    vec3 additionalColor1 = vec3(0.8, 0.4, 0.2); // Warm Orange/Brown
+    vec3 additionalColor2 = vec3(0.2, 0.5, 0.3); // Cooler Green
+    vec3 additionalColor3 = vec3(0.3, 0.3, 0.7); // Soft Blue
+
+    // Weighted mix to add hints of additional colors
+    baseColor = normalize(mix(mix(mix(baseColor, additionalColor1, 0.2), additionalColor2, 0.15), additionalColor3, 0.1));
 
     vec3 color = baseColor * brightnessFactor;
 
     gl_FragColor = vec4(color, 1.0);
 }
+
 
 
 `;
