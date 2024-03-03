@@ -519,14 +519,11 @@ function main() {
           let parts = rule.split('=');
           if (parts.length === 2) {
               rules[parts[0].trim()] = parts[1].trim();
-          } else {
-            rules["F"] = parts[1].trim();
           }
       });
       return rules;
     }
-    // Facilitate a default 'F=' rule if none is used.
-
+    // Facilitate a default 'F=' rule if non
 
     rules = parseRules(document.getElementById('rule').value);
     // L-system setup
