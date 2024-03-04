@@ -549,8 +549,8 @@ function main() {
         const centerX = parseFloat(document.getElementById('centerX').value);
         const centerY = parseFloat(document.getElementById('centerY').value);
 
-        const vShader = encodeURIComponent(document.getElementById('vShader').value);
-        const fShader = encodeURIComponent(document.getElementById('fShader').value);
+        // const vShader = encodeURIComponent(document.getElementById('vShader').value);
+        // const fShader = encodeURIComponent(document.getElementById('fShader').value);
 
 
 
@@ -560,7 +560,7 @@ function main() {
 
         // Construct the URL with GET parameters
         const baseUrl = window.location.href.split('?')[0]; // Removes existing parameters if any
-        const newUrl = `${baseUrl}?centerX=${centerX}&centerY=${centerY}&angle=${angle}&depth=${depth}&axiom=${encodedAxiom}&rules=${encodedRule}&length=${length}&vShader=${vShader}&fShader=${fShader}`;
+        const newUrl = `${baseUrl}?centerX=${centerX}&centerY=${centerY}&angle=${angle}&depth=${depth}&axiom=${encodedAxiom}&rules=${encodedRule}&length=${length}`;
 
         return newUrl;
     }
