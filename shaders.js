@@ -38,32 +38,49 @@ const shaderLibrary = {
     },
     "Plant": {
         vShader: `
-        attribute vec4 aVertexPosition;
-        attribute float aDepth;
-        varying float vDepth;
-        void main(void) {
+          attribute vec4 aVertexPosition;
+          attribute float aDepth; // Depth will influence color in the fragment shader.
+
+          varying float vDepth;
+
+          void main(void) {
             gl_Position = aVertexPosition;
-            vDepth = aDepth;
-        }`,
+            vDepth = aDepth; // Pass depth through to the fragment shader.
+          }`,
         fShader: `
         precision mediump float;
-        varying float vDepth;
-        void main(void) {
-            vec3 color;
-            if (vDepth < 0.2) { // Assume the first 20% of depth is the trunk
-                color = vec3(0.55, 0.27, 0.07); // Brown
-            } else if (vDepth < 0.8) { // Middle segments for leaves
-                float greenIntensity = 0.5 + 0.5 * sin(vDepth * 3.1415); // Oscillate green intensity
-                color = vec3(0.0, greenIntensity, 0.0); // Green shades
-            } else { // Last segments for flowers
-                // Interpolate between pink and purple towards the tips
-                float mixRatio = (vDepth - 0.8) / 0.2; // Normalize between 0 and 1
-                vec3 pink = vec3(0.9, 0.58, 0.8);
-                vec3 purple = vec3(0.5, 0.0, 0.5);
-                color = mix(pink, purple, mixRatio);
-            }
-            gl_FragColor = vec4(color, 1.0);
-        }`
+
+varying float vDepth; // Received from the vertex shader, integer values starting at 1.
+
+void main(void) {
+    vec3 color;
+
+    // Define transition ranges based on integer depth values
+    const float stemEndDepth = 150.0; // Depth at which the stem ends and leaves start
+
+    // Colors for the stem and leaves
+    vec3 brown = vec3(0.65, 0.16, 0.16); // Stem color
+    vec3 green = vec3(0.0, 0.8, 0.0); // Leaves color
+
+    if (vDepth <= stemEndDepth) {
+        // Use brown color for the stem
+        color = brown;
+    } else {
+        // Use green color for leaves beyond the stem
+        color = green;
+    }
+
+    // Optional: Randomly introduce flower-like colors in the upper parts of the plant
+    if (vDepth > stemEndDepth && fract(sin(vDepth) * 43758.5453) > 0.9) {
+        // Mix in some pink/purple colors randomly for "flowers"
+        vec3 flowerColor = mix(vec3(0.94, 0.5, 0.5), vec3(0.5, 0.0, 0.5), fract(sin(vDepth) * 0.9));
+        color = mix(color, flowerColor, 0.8); // Softly blend the flower color with green
+    }
+
+    gl_FragColor = vec4(color, 1.0); // Apply the calculated color
+}
+
+`
     },
     "Coral": {
         vShader: `
@@ -158,9 +175,7 @@ const shaderLibrary = {
             float b = sin(vDepth * 2.0 + 3.0) * 0.5 + 0.5;
             gl_FragColor = vec4(r, g, b, 1.0);
         }`
-    }
-
-
+    },
     "Colorful": {
       vShader: `
           attribute vec4 aVertexPosition;

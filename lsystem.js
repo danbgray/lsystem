@@ -143,10 +143,10 @@ function drawLSystem(gl, shaderProgram, instructions, angle, centerX, centerY, l
 
             // Add vertices for line
             vertices.push(x, y, newX, newY);
+            depth += 1.0;
             depthAttributes.push(depth, depth); // Assuming color/depth is applied per vertex
-            depth += 1;
-             let axiomIndex = cmd.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
-             axiomAttributes.push(axiomIndex, axiomIndex); // For start and end of the line
+            let axiomIndex = cmd.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
+            axiomAttributes.push(axiomIndex, axiomIndex); // For start and end of the line
 
             x = newX; // Update current position
             y = newY;
@@ -509,8 +509,7 @@ function setupListeners(canvas) {
       document.getElementById('ruleMirror').scrollTop = this.scrollTop;
   });
 
-  /* End WYSIWYG */
-  
+  /* End WYSIWYG*/
   document.getElementById('updateShader').addEventListener('click', function() {
       const gl = document.querySelector('#glcanvas').getContext('webgl');
        if (!gl) {
