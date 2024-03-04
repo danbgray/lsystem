@@ -54,7 +54,7 @@ This project is licensed under the MIT License.
 ## Acknowledgments
 
 - Thanks to all the contributors who have helped to improve this project.
-- Special thanks to Daniel Gray for initiating this project and providing guidance. (Twitter: [@dbgray](https://twitter.com/dbgray)
+- Special thanks to Daniel Gray for initiating this project and providing guidance. (Twitter: [@dbgray](https://twitter.com/dbgray))
 
 Please feel free to reach out or DM me.  Its free to use for whatever you want to use it for, but please credit me if you do.
 
