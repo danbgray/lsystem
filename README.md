@@ -2,6 +2,11 @@
 
 This project is a WebGL-based renderer for L-Systems (Lindenmayer Systems), a mathematical formalism proposed by Aristid Lindenmayer in 1968 as a foundation for an algorithmic description of plant growth processes. L-Systems are widely used in computer graphics to generate fractal-like structures and model the growth of plants and other organisms.
 
+![screenshot](https://github.com/danbgray/lsystem/blob/main/screenshot.jpg?raw=true)
+
+## Live Version
+https://danbgray.github.io/lsystem/
+
 ## What is an L-System?
 
 An L-System consists of an alphabet of symbols that can be used to make strings, a collection of production rules that expand each symbol into a larger string of symbols, an initial "axiom" string from which to begin construction, and a mechanism for translating the generated strings into geometric structures.
@@ -52,6 +57,6 @@ This project is licensed under the MIT License. See the [LICENSE](https://chat.o
 - Special thanks to Daniel Gray for initiating this project and providing guidance. (Twitter: @dbgray)
 
 Please feel free to reach out or DM me.  Its free to use for whatever you want to use it for, but please credit me if you do.
-![screenshot](https://github.com/danbgray/lsystem/blob/main/screenshot.jpg?raw=true)
+
 
 
