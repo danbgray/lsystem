@@ -273,9 +273,12 @@ function setupSensors() {
 }
 
 function handleOrientation(event) {
-    const beta = event.beta*1.5; // Left / Right tilt.
-    let normalizedAngle = beta + 180;
-    document.getElementById('angle').value = normalizedAngle.toFixed(2);
+  const initialAngle = parseFloat(getUrlParams()['angle']) || 0; // Get angle from URL or default to 0
+    const beta = event.beta; // Assuming beta axis for this example
+    // Map beta to a range around the initial angle, with a max deviation of 10 degrees
+    let angle = initialAngle + Math.max(Math.min(beta, 10), -10);
+    document.getElementById('angle').value = angle.toFixed(2);
+
 }
 
 function handleMotion(event) {
@@ -355,7 +358,10 @@ function prePopulateFields() {
 
     // Check if the parameters exist and set the form field values
     if (params['angle']) {
-        document.getElementById('angle').value = params['angle'];
+        document.getElementById('baseAngle').value = params['angle'];
+    }
+    if (params['wave']) {
+        document.getElementById('wave').value = params['wave'];
     }
     if (params['depth']) {
         document.getElementById('depth').value = params['depth'];
@@ -435,10 +441,24 @@ let angle = 25; // Default angle
 let mouseX = 0; // Mouse X position
 let drag = false;
 
+let baseAngle = 25
+let waveAmount = 0
+let currentRenderingAngle = baseAngle; // Initialize with the base angle
+
 function setupListeners(canvas) {
   const dragMessage = document.getElementById('dragMessage'); // The message element
   /* Sets up event listeners, depends on having the canvas context already setup
      since the listeners will have an affect on the canvas, esp Shaders ( when complete ) */
+
+  document.getElementById('baseAngle').addEventListener('input', function() {
+       baseAngle = parseFloat(this.value); // Update base angle
+       // You don't need to redraw here if animate() is continuously running
+   });
+  document.getElementById('wave').addEventListener('input', function() {
+    waveAmount = parseFloat(this.value); // Update wave amount
+    // You don't need to redraw here if animate() is continuously running
+  });
+
   document.getElementById('updateShader').addEventListener('click', function() {
       const gl = document.querySelector('#glcanvas').getContext('webgl');
        if (!gl) {
@@ -566,13 +586,14 @@ function main() {
     }
     function generateLink() {
           // Retrieve values from the inputs
-        const angle = document.getElementById('angle').value;
+        const angle = document.getElementById('baseAngle').value;
         const depth = document.getElementById('depth').value;
         const axiom = document.getElementById('axiom').value;
         const rule = document.getElementById('rule').value;
         const length = parseFloat(document.getElementById('length').value);
         const centerX = parseFloat(document.getElementById('centerX').value);
         const centerY = parseFloat(document.getElementById('centerY').value);
+        const wave = parseFloat(document.getElementById('wave').value);
         const encodedRule = encodeURIComponent(rule);
         const encodedAxiom = encodeURIComponent(axiom);
         const shaderPreset = document.getElementById('shaderPresetSelector').value;
@@ -580,7 +601,7 @@ function main() {
 
         let newUrl = `${baseUrl}?angle=${angle}&depth=${depth}`;
         newUrl += `&centerX=${centerX}&centerY=${centerY}&length=${length}`;
-        newUrl += `&axiom=${encodedAxiom}&rules=${encodedRule}`;
+        newUrl += `&axiom=${encodedAxiom}&rules=${encodedRule}&wave=${wave}`;
 
         if (shaderPreset !== 'Custom') {
             newUrl += `&shaderPreset=${encodeURIComponent(shaderPreset)}`;
@@ -613,7 +634,7 @@ function main() {
         // Redirect the user to the new URL
         window.location.href = generateLink();
     });
-
+    let startTime = Date.now();
     function animate() {
         requestAnimationFrame(animate); // Continue the animation loop
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the canvas
@@ -622,9 +643,14 @@ function main() {
         const ruleStr = document.getElementById('rule').value;
         const depth = parseInt(document.getElementById('depth').value);
         const length = parseFloat(document.getElementById('length').value);
-        const angle = parseFloat(document.getElementById('angle').value);
+        const baseAngle = parseFloat(document.getElementById('baseAngle').value);
+        const waveAmount = parseFloat(document.getElementById('wave').value);
         const centerX = parseFloat(document.getElementById('centerX').value);
         const centerY = parseFloat(document.getElementById('centerY').value);
+
+        const elapsedTime = (Date.now() - startTime) / 1000;
+        currentRenderingAngle = baseAngle + waveAmount * Math.sin(elapsedTime);
+        document.getElementById('currentAngle').value = currentRenderingAngle.toFixed(2);
         // Generate the L-system string with the current angle
 
         // Calculate Rules from Input
@@ -637,7 +663,7 @@ function main() {
         // Draw the L-system
 
 
-        drawLSystem(gl, currentShaderProgram, instructions, angle, centerX, centerY, length);
+        drawLSystem(gl, currentShaderProgram, instructions, currentRenderingAngle, centerX, centerY, length);
     }
 
     animate(); // Start the animation loop
