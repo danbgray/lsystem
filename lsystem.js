@@ -238,7 +238,17 @@ function generateLSystem(rules, axiom, depth) {
     return result;
 }
 
+/* Controls */
 
+function populateShaderDropdown() {
+    const dropdown = document.getElementById('shaderSelection');
+    Object.keys(shaderLibrary).forEach(shaderName => {
+        const option = document.createElement('option');
+        option.value = shaderName;
+        option.innerText = shaderName;
+        dropdown.appendChild(option);
+    });
+}
 
 /* On Desktop, show prompt.  This is currently not used, but we want to be able to show the user some prompt.
    to encourage interaction. */
@@ -330,8 +340,8 @@ function initOrUpdateShaderProgram(gl, vsSource, fsSource) {
 }
 
 function updateShaderProgram(gl) {
-  const vsSource = document.getElementById('vertexShaderCode').value.trim();
-  const fsSource = document.getElementById('fragmentShaderCode').value.trim();
+  const vsSource = document.getElementById('vShader').value.trim();
+  const fsSource = document.getElementById('fShader').value.trim();
   const shaderProgram = initShaderProgram(gl, vsSource, fsSource); // Assume this function is correctly implemented
   gl.useProgram(shaderProgram);
   console.log("Shader program updated successfully.");
@@ -373,20 +383,41 @@ function prePopulateFields() {
     if (params['length']) {
         document.getElementById('length').value = params['length'];
     }
-
-    // Preload vertex shader code
-     if (params['vShader']) {
-         const vertexShaderCode = atob(params['vShader']); // Decode Base64
-         document.getElementById('vertexShaderCode').value = vertexShaderCode;
-     }
-
-     // Preload fragment shader code
-     if (params['fShader']) {
-         const fragmentShaderCode = atob(params['fShader']); // Decode Base64
-         document.getElementById('fragmentShaderCode').value = fragmentShaderCode;
-     }
+    if (params['vShader']) {
+        document.getElementById('vShader').value = params['vShader'];
+    }
+    if (params['fShader']) {
+        document.getElementById('fShader').value = params['fShader'];
+    }
 
 }
+
+function populateShaderPresetDropdown() {
+    const dropdown = document.getElementById('shaderPresetSelector');
+    Object.keys(shaderLibrary).forEach(presetName => {
+        const option = document.createElement('option');
+        option.value = presetName;
+        option.textContent = presetName;
+        dropdown.appendChild(option);
+    });
+}
+function applyShaderPreset(presetName) {
+  const preset = shaderLibrary[presetName];
+  if (!preset) {
+      console.warn("Shader preset not found:", presetName);
+      return;
+  }
+  document.getElementById('vShader').value = preset.vShader;
+  document.getElementById('fShader').value = preset.fShader;
+  const gl = document.querySelector('#glcanvas').getContext('webgl');
+   if (!gl) {
+       console.error("WebGL context not available.");
+       return;
+   }
+   updateShaderProgram(gl); // Pass the WebGL context
+
+}
+
 
 
 // Global variables for angle and mouse position
@@ -408,16 +439,11 @@ function setupListeners(canvas) {
   });
 
 
-  document.getElementById('toggleShaderCode').addEventListener('click', function() {
-      const shaderCodeContent = document.getElementById('shaderCodeContent');
-      if (shaderCodeContent.style.display === "none") {
-          shaderCodeContent.style.display = "block";
-          this.textContent = "Hide Shader Code";
-      } else {
-          shaderCodeContent.style.display = "none";
-          this.textContent = "Show Shader Code";
-      }
-  });
+
+  document.getElementById('shaderPresetSelector').addEventListener('change', function() {
+      applyShaderPreset(this.value);
+    });
+
 
   // Setup mouse move event listener to update the angle based on mouse position
   canvas.addEventListener('mousedown', (event) => {
@@ -454,6 +480,8 @@ function setupListeners(canvas) {
 function main() {
     adjustLayoutForMobile(); // Adjust layout based on the device type
     prePopulateFields();
+    populateShaderPresetDropdown();
+
     const canvas = document.getElementById('glcanvas');
     // Set canvas dimensions to 70% of window width and 100% of window height
     canvas.width = window.innerWidth * (isMobileDevice() ? 1 : 0.7); // Adjust size based on device type
@@ -521,6 +549,9 @@ function main() {
         const centerX = parseFloat(document.getElementById('centerX').value);
         const centerY = parseFloat(document.getElementById('centerY').value);
 
+        const vShader = encodeURIComponent(document.getElementById('vShader').value);
+        const fShader = encodeURIComponent(document.getElementById('fShader').value);
+
 
 
         // Encode the rule parameter to ensure the URL is valid
@@ -529,7 +560,7 @@ function main() {
 
         // Construct the URL with GET parameters
         const baseUrl = window.location.href.split('?')[0]; // Removes existing parameters if any
-        const newUrl = `${baseUrl}?centerX=${centerX}&centerY=${centerY}&angle=${angle}&depth=${depth}&axiom=${encodedAxiom}&rules=${encodedRule}&length=${length}`;
+        const newUrl = `${baseUrl}?centerX=${centerX}&centerY=${centerY}&angle=${angle}&depth=${depth}&axiom=${encodedAxiom}&rules=${encodedRule}&length=${length}&vShader=${vShader}&fShader=${fShader}`;
 
         return newUrl;
     }

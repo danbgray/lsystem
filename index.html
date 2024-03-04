@@ -2,6 +2,7 @@
 <html>
 <head>
 <link rel="stylesheet" href="./style.css" />
+<script src="./shaders.js"></script>
 <script src="./lsystem.js"></script>
 </head>
 <body>
@@ -38,10 +39,14 @@ B=+A-BB--B-A++A+B
 
     <hr />
     <div id="shaderCodeContainer" style="margin-top: 20px;">
+      <select id="shaderPresetSelector">
+        <option value="">Select a Shader Preset</option>
+        <!-- Options will be dynamically populated -->
+      </select>
     <button id="toggleShaderCode">Edit Shader Code</button>
     <div id="shaderCodeContent" style="display: none;">
       <button id="updateShader">Update Shaders</button>
-        <textarea id="vShaderCode" rows="10" style="width: 100%;">
+        <textarea id="vShader" rows="10" style="width: 100%;">
           attribute vec4 aVertexPosition;
           attribute float aDepth;
           attribute float aAxiom; // New attribute for axiom
@@ -55,7 +60,7 @@ B=+A-BB--B-A++A+B
               vAxiom = aAxiom;
           }
         </textarea>
-        <textarea id="fragmentShaderCode" rows="10" style="width: 100%;">
+        <textarea id="fShader" rows="10" style="width: 100%;">
           precision mediump float;
 
           varying float vDepth;
