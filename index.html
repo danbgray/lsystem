@@ -11,29 +11,28 @@
     <h2>L-System Controls</h2>
     <div>
         <label for="axiom">Axiom:</label>
-        <input type="text" id="axiom" value="A">
+        <input type="text" id="axiom" value="F">
     </div>
     <div style="margin-bottom: 20px;">
-       <label for="rule">Rules (format: A=F+F--F+F):</label>
+       <label for="rule">Rules (format: F=F+F--F+F):</label>
        <div id="ruleContainer" class="textarea-container">
           <div id="ruleMirror" class="mirror"></div>
-          <textarea id="rule" rows="5">A=A-B--B+A++AA+B-
-B=+A-BB--B-A++A+B</textarea>
+          <textarea id="rule" rows="5">F=FF</textarea>
        </div>
        </textarea>
    </div>
     <div>
         <label for="depth">Recursion Depth:</label>
-        <input type="number" id="depth" value="5" min="1" max="8">
+        <input type="number" id="depth" value="1" min="1" max="8">
     </div>
     <div id="centerControl">
       <label for="centerX">Center</label>
-      <input type="number" id="centerX" value="-.5" step="any">
-      <input type="number" id="centerY" value=".5" step="any">
+      <input type="number" id="centerX" value="0" step="any">
+      <input type="number" id="centerY" value="0" step="any">
     </div>
     <div>
         <label for="length">Segment Length:</label>
-        <input type="number" id="length" value="0.01">
+        <input type="number" id="length" value="0.1">
     </div>
     <div>
         <label for="baseAngle">Base Angle:</label>
