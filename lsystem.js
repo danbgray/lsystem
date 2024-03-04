@@ -343,6 +343,40 @@ function updateShaderProgram(gl) {
   return gl;
 }
 
+function syncTextAreaMirror(event, textarea, mirror) {
+    let text = textarea.value;
+    const startPosition = textarea.selectionStart;
+    const endPosition = textarea.selectionEnd;
+
+    let beforeText = text.substring(0, startPosition);
+    let selectedText = text.substring(startPosition, endPosition);
+    let afterText = text.substring(endPosition);
+
+    let beforeHtml = escapeHtml(beforeText);
+    let selectedHtml = selectedText ? `<span class='highlight'>${escapeHtml(selectedText)}</span>` : '';
+    let afterHtml = escapeHtml(afterText);
+
+    // If there's a selection, highlight the selection; otherwise, highlight the preceding character
+    if (startPosition !== endPosition) {
+        mirror.innerHTML = beforeHtml + selectedHtml + afterHtml;
+    } else {
+        let lastChar = beforeText[beforeText.length - 1] || '';
+        let beforeLastChar = beforeText.substring(0, beforeText.length - 1);
+        mirror.innerHTML = escapeHtml(beforeLastChar) +
+                           `<span class='highlight'>${escapeHtml(lastChar)}</span>` +
+                           afterHtml;
+    }
+}
+
+function escapeHtml(text) {
+  return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+}
+
 /* Data Loading */
 function getUrlParams() {
     const queryString = window.location.search;
@@ -459,6 +493,17 @@ function setupListeners(canvas) {
     // You don't need to redraw here if animate() is continuously running
   });
 
+  document.getElementById('rule').addEventListener('input', function() {
+    syncTextAreaMirror(this, document.getElementById('ruleMirror'));
+  });
+  document.getElementById('rule').addEventListener('keyup', function() {
+    syncTextAreaMirror(this, document.getElementById('ruleMirror'));
+  });
+  document.getElementById('rule').addEventListener('scroll', function() {
+      // Sync the scroll position of the mirror div with the textarea
+      document.getElementById('ruleMirror').scrollTop = this.scrollTop;
+  });
+
   document.getElementById('updateShader').addEventListener('click', function() {
       const gl = document.querySelector('#glcanvas').getContext('webgl');
        if (!gl) {
@@ -492,6 +537,7 @@ function setupListeners(canvas) {
   });
 
   // Setup mouse move event listener to update the angle based on mouse position
+  /* Deprecating mouse interaction until we have something cooler
   canvas.addEventListener('mousedown', (event) => {
       const rect = canvas.getBoundingClientRect();
       mouseX = event.clientX - rect.left; // Update global mouseX
@@ -520,13 +566,12 @@ function setupListeners(canvas) {
       drag = false; // Reset drag state
       dragMessage.style.display = 'none'; // Hide message
     }
-  });
+  }); */
 }
 
 function main() {
     adjustLayoutForMobile(); // Adjust layout based on the device type
     populateShaderPresetDropdown();
-
     const canvas = document.getElementById('glcanvas');
     // Set canvas dimensions to 70% of window width and 100% of window height
     canvas.width = window.innerWidth * (isMobileDevice() ? 1 : 0.7); // Adjust size based on device type
@@ -550,6 +595,7 @@ function main() {
     setupSensors();
     setupListeners(canvas);
     prePopulateFields();
+    syncTextAreaMirror(document.getElementById('rule'), document.getElementById('ruleMirror'));
     /* Desktop Support */
 
     /* Setup Event Listeners */

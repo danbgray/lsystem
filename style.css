@@ -1,102 +1,155 @@
+/* Base styling for body and html */
+body, html {
+    padding: 0;
+    margin: 0;
+    background: #000;
+    font-family: 'Courier New', Courier, monospace;
+    color: #00ff00;
+    overflow-x: hidden; /* Prevent horizontal scroll */
+}
 
-body, html { padding:0; margin:0;}
+/* Styling for labels */
 label {
     display: block;
     margin-bottom: 5px;
     color: #666;
 }
 
-input, button {
+/* General input and button styling */
+input, button, select, textarea {
     width: 100%;
     padding: 8px;
     margin-top: 5px;
     box-sizing: border-box;
+    border-radius: 4px;
+    background-color: black;
+    color: #0c0;
+    border: 1px solid #151;
+    box-shadow: 0 2px 3px #f0f0f0;
+    appearance: none; /* Remove default style of select in WebKit browsers */
+    font-family: 'Courier New', Courier, monospace;
 }
+
+/* Input focus styling */
+input:focus, textarea:focus {
+    outline: none;
+    background-color: #121212;
+    /* Terminal-like cursor effect */
+    caret-color: #0f0;
+}
+
+/* Button styling */
 button {
-    background-color: #5C8FCE;
-    color: white;
-    border: none;
+    background-color: #333; /* Darker button background */
+    color: #0f0; /* Consistent text color */
     cursor: pointer;
+    border: none;
+    transition: background-color 0.3s ease;
 }
 
 button:hover {
-    background-color: #4B7CB0;
+    background-color: #444; /* Slightly lighter on hover */
 }
-select {
-    width: 100%;
-    padding: 8px;
-    margin-top: 5px;
-    border-radius: 4px;
-    background-color: white;
-    border: 1px solid #ccc;
-    box-shadow: 0 2px 3px #f0f0f0;
-    appearance: none; /* Remove default style of select in WebKit browsers */
-}
-#glcanvas {}
+
+/* Styling for the controls container */
 #controls {
-  width:25%; float:right;
+    width: 25%;
+    float: right;
+    padding: 20px;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+    margin-bottom: 20px; /* Space before the next section */
+    background-color: #000; /* Black background for control panel */
 }
 
-#glcanvas {
-  border:1px solid #000000;
-  float:left; width:50%;
-}
-
-#controls {
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
-    border-left: 2px solid #ddd;
-    box-sizing: border-box;
-    height: 100vh;
-    overflow-y: auto;
-    padding-left:1em;
-}
-
+/* Header within controls */
 #controls h2 {
-    color: #333;
+    color: #00cc00;
 }
 
+/* Dividers within controls */
 #controls div {
     margin-bottom: 10px;
 }
 
-#centerControl input { width:40%; }
-
-#dragMessage {
-    position: absolute; /* Or fixed, depending on your layout */
-    top: 50%; /* Adjust based on your layout */
-    left: 30%; /* Center horizontally */
-    transform: translateX(-50%); /* Center horizontally */
-    color: #111;
-    padding: 5px 10px;
-    border-radius: 5px;
-    z-index: 100; /* Ensure it's above other elements */
+/* Specific styling for compact controls and center controls */
+#compactControls, #centerControl {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px; /* Add some space between compact controls */
 }
 
-#controls {
-    max-width: 600px;
-    margin: auto;
-    padding: 20px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    background-color: #fafafa;
+#compactControls > div, #centerControl > div {
+    flex-basis: calc(50% - 5px); /* Adjust based on gap for two columns */
 }
 
-#controls h2 {
-    color: #333;
+#centerControl input, #compactControls input {
+    flex-grow: 1;
 }
 
-#controls input[type="text"],
-#controls input[type="number"],
-#controls textarea {
-    padding: 8px;
-    margin-top: 5px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
+/* Styling for horizontal rules */
+hr {
+    border: 1px solid #050;
+    background-color: green; /* Ensure the HR is visible */
 }
 
-#controls button:hover {
-    background-color: #45a049;
+/* Media query for responsiveness */
+@media (max-width: 768px) {
+    #controls, #glcanvas {
+        width: 100%;
+        float: none;
+    }
+    #compactControls, #centerControl {
+        flex-direction: column;
+    }
+    #compactControls > div, #centerControl > div {
+        flex-basis: 100%; /* Full width on smaller screens */
+    }
+    #centerControl input {
+        width: 100%; /* Adjust input width on smaller screens */
+    }
+}
+
+/* Styling for the mirror technique */
+.mirror {
+    position: absolute;
+    pointer-events: none;
+    z-index: 1;
+    white-space: pre-wrap; /* Preserve whitespace and line breaks */
+    word-wrap: break-word; /* Ensure long lines wrap */
+    /* Other styling should mirror the textarea exactly, adjust as necessary */
+}
+.textarea-container {
+    position: relative; /* Container for both textarea and mirror */
+}
+
+#rule {
+    position: relative;
+    background-color: transparent;
+    color: transparent;
+    z-index: 2;
+    font-size: 16px; /* Match textarea font size */
+}
+
+.mirror {
+    position: absolute;
+    top: 5px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 8px; /* Match textarea padding */
+    pointer-events: none;
+    z-index: 1;
+    color: #00ff00;
+    font-family: 'Courier New', Courier, monospace; /* Match textarea font */
+    font-size: 16px; /* Match textarea font size */
+    line-height: normal; /* Match textarea line height */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-y: auto; /* Match textarea overflow */
+}
+
+.highlight {
+    background-color: #aa28aa; /* Highlight background */
+    color: #0f0; /* Highlight color */
 }
