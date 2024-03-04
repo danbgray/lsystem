@@ -343,31 +343,17 @@ function updateShaderProgram(gl) {
   return gl;
 }
 
-function syncTextAreaMirror(event, textarea, mirror) {
-    let text = textarea.value;
-    const startPosition = textarea.selectionStart;
-    const endPosition = textarea.selectionEnd;
+function syncTextAreaMirror(textarea, mirror) {
+  let text = textarea.value;
+  let position = textarea.selectionStart;
 
-    let beforeText = text.substring(0, startPosition);
-    let selectedText = text.substring(startPosition, endPosition);
-    let afterText = text.substring(endPosition);
+  let beforeText = text.substring(0, position - 1);
+  let highlightText = `<span class='highlight'>${text.charAt(position - 1)}</span>`;
+  let afterText = text.substring(position);
 
-    let beforeHtml = escapeHtml(beforeText);
-    let selectedHtml = selectedText ? `<span class='highlight'>${escapeHtml(selectedText)}</span>` : '';
-    let afterHtml = escapeHtml(afterText);
-
-    // If there's a selection, highlight the selection; otherwise, highlight the preceding character
-    if (startPosition !== endPosition) {
-        mirror.innerHTML = beforeHtml + selectedHtml + afterHtml;
-    } else {
-        let lastChar = beforeText[beforeText.length - 1] || '';
-        let beforeLastChar = beforeText.substring(0, beforeText.length - 1);
-        mirror.innerHTML = escapeHtml(beforeLastChar) +
-                           `<span class='highlight'>${escapeHtml(lastChar)}</span>` +
-                           afterHtml;
-    }
+  // Use innerText for before and after text to prevent HTML interpretation
+  mirror.innerHTML = escapeHtml(beforeText) + highlightText + escapeHtml(afterText);
 }
-
 function escapeHtml(text) {
   return text
       .replace(/&/g, "&amp;")
