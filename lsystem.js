@@ -240,15 +240,7 @@ function generateLSystem(rules, axiom, depth) {
 
 /* Controls */
 
-function populateShaderDropdown() {
-    const dropdown = document.getElementById('shaderSelection');
-    Object.keys(shaderLibrary).forEach(shaderName => {
-        const option = document.createElement('option');
-        option.value = shaderName;
-        option.innerText = shaderName;
-        dropdown.appendChild(option);
-    });
-}
+
 
 /* On Desktop, show prompt.  This is currently not used, but we want to be able to show the user some prompt.
    to encourage interaction. */
@@ -383,11 +375,26 @@ function prePopulateFields() {
     if (params['length']) {
         document.getElementById('length').value = params['length'];
     }
-    if (params['vShader']) {
+    if (params['vShader'] && params['fShader']) {
         document.getElementById('vShader').value = params['vShader'];
-    }
-    if (params['fShader']) {
         document.getElementById('fShader').value = params['fShader'];
+        const gl = document.querySelector('#glcanvas').getContext('webgl');
+         if (!gl) {
+             console.error("WebGL context not available.");
+             return;
+         }
+         console.log('Applying shader preset:'+params['shaderPreset']);
+         updateShaderProgram(gl); // Pass the WebGL context
+    }
+    if (params['shaderPreset']) {
+      document.getElementById('shaderPresetSelector').value = params['shaderPreset'];
+      const gl = document.querySelector('#glcanvas').getContext('webgl');
+       if (!gl) {
+           console.error("WebGL context not available.");
+           return;
+       }
+       console.log('Applying shader preset:'+params['shaderPreset']);
+       applyShaderPreset(params['shaderPreset']);
     }
 
 }
@@ -438,12 +445,28 @@ function setupListeners(canvas) {
        updateShaderProgram(gl); // Pass the WebGL context
   });
 
-
-
   document.getElementById('shaderPresetSelector').addEventListener('change', function() {
       applyShaderPreset(this.value);
     });
 
+  document.getElementById('vShader').addEventListener('input', () => {
+      document.getElementById('shaderPresetSelector').value = "Custom"; // Assuming you have a "Custom" option
+  });
+
+  document.getElementById('fShader').addEventListener('input', () => {
+    document.getElementById('shaderPresetSelector').value = "Custom"; // Or de-select by setting value to ""
+  });
+
+  const toggleButton = document.getElementById('toggleShaderCode');
+  const shaderCodeContent = document.getElementById('shaderCodeContent');
+
+  toggleButton.addEventListener('click', function() {
+    if (shaderCodeContent.style.display === 'none' || shaderCodeContent.style.display === '') {
+      shaderCodeContent.style.display = 'block';
+    } else {
+      shaderCodeContent.style.display = 'none';
+    }
+  });
 
   // Setup mouse move event listener to update the angle based on mouse position
   canvas.addEventListener('mousedown', (event) => {
@@ -479,7 +502,6 @@ function setupListeners(canvas) {
 
 function main() {
     adjustLayoutForMobile(); // Adjust layout based on the device type
-    prePopulateFields();
     populateShaderPresetDropdown();
 
     const canvas = document.getElementById('glcanvas');
@@ -503,12 +525,12 @@ function main() {
 
     /* Motion and realtime event listeners */
     setupSensors();
-
-
+    setupListeners(canvas);
+    prePopulateFields();
     /* Desktop Support */
 
     /* Setup Event Listeners */
-    setupListeners(canvas);
+
 
     function parseRules(el) {
       /* Takes in a string and returns a rule dict */
@@ -548,19 +570,25 @@ function main() {
         const length = parseFloat(document.getElementById('length').value);
         const centerX = parseFloat(document.getElementById('centerX').value);
         const centerY = parseFloat(document.getElementById('centerY').value);
-
-        // const vShader = encodeURIComponent(document.getElementById('vShader').value);
-        // const fShader = encodeURIComponent(document.getElementById('fShader').value);
-
-
-
-        // Encode the rule parameter to ensure the URL is valid
         const encodedRule = encodeURIComponent(rule);
         const encodedAxiom = encodeURIComponent(axiom);
+        const shaderPreset = document.getElementById('shaderPresetSelector').value;
+        const baseUrl = window.location.href.split('?')[0];
 
-        // Construct the URL with GET parameters
-        const baseUrl = window.location.href.split('?')[0]; // Removes existing parameters if any
-        const newUrl = `${baseUrl}?centerX=${centerX}&centerY=${centerY}&angle=${angle}&depth=${depth}&axiom=${encodedAxiom}&rules=${encodedRule}&length=${length}`;
+        let newUrl = `${baseUrl}?angle=${angle}&depth=${depth}`;
+        newUrl += `&centerX=${centerX}&centerY=${centerY}&length=${length}`;
+        newUrl += `&axiom=${encodedAxiom}&rules=${encodedRule}`;
+
+        if (shaderPreset !== 'Custom') {
+            newUrl += `&shaderPreset=${encodeURIComponent(shaderPreset)}`;
+        } else {
+           // Handle custom shader code
+           // Note: Be cautious about the length of URL if including entire shader code
+
+           const vShaderCode = document.getElementById('vShader').value;
+           const fShaderCode = document.getElementById('fShader').value;
+           newUrl += `&vShader=${encodeURIComponent(vShaderCode)}&fShader=${encodeURIComponent(fShaderCode)}`;
+        }
 
         return newUrl;
     }
