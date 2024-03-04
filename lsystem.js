@@ -401,11 +401,14 @@ function prePopulateFields() {
 
 function populateShaderPresetDropdown() {
     const dropdown = document.getElementById('shaderPresetSelector');
-    Object.keys(shaderLibrary).forEach(presetName => {
+    Object.keys(shaderLibrary).forEach( (presetName, index) => {
         const option = document.createElement('option');
         option.value = presetName;
         option.textContent = presetName;
         dropdown.appendChild(option);
+        if (index === 0) { // Automatically select the first shader
+            dropdown.value = presetName;
+          }
     });
 }
 function applyShaderPreset(presetName) {
