@@ -56,7 +56,7 @@ void main(void) {
     vec3 color;
 
     // Define transition ranges based on integer depth values
-    const float stemEndDepth = 150.0; // Depth at which the stem ends and leaves start
+    const float stemEndDepth = 50.0; // Depth at which the stem ends and leaves start
 
     // Colors for the stem and leaves
     vec3 brown = vec3(0.65, 0.16, 0.16); // Stem color
