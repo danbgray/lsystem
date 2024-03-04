@@ -344,16 +344,29 @@ function updateShaderProgram(gl) {
 }
 
 function syncTextAreaMirror(textarea, mirror) {
-  let text = textarea.value;
-  let position = textarea.selectionStart;
+    let text = textarea.value;
+    const startPosition = textarea.selectionStart;
+    const endPosition = textarea.selectionEnd;
 
-  let beforeText = text.substring(0, position - 1);
-  let highlightText = `<span class='highlight'>${text.charAt(position - 1)}</span>`;
-  let afterText = text.substring(position);
+    let beforeText = text.substring(0, startPosition);
+    let selectedText = text.substring(startPosition, endPosition);
+    let afterText = text.substring(endPosition);
 
-  // Use innerText for before and after text to prevent HTML interpretation
-  mirror.innerHTML = escapeHtml(beforeText) + highlightText + escapeHtml(afterText);
+    let beforeHtml = escapeHtml(beforeText);
+    let selectedHtml = selectedText ? `<span class='highlight'>${escapeHtml(selectedText)}</span>` : '';
+    let afterHtml = escapeHtml(afterText);
+
+    // If there's a selection, highlight the selection; otherwise, highlight the preceding character
+    if (startPosition !== endPosition) {
+        mirror.innerHTML = beforeHtml + selectedHtml + afterHtml;
+    } else {
+        let lastChar = beforeText[beforeText.length - 1] || ' ';
+        let beforeLastChar = escapeHtml(beforeText.substring(0, beforeText.length - 1));
+        let lastCharHtml = `<span class='highlight'>${escapeHtml(lastChar)}</span>`;
+        mirror.innerHTML = beforeLastChar + lastCharHtml + afterHtml;
+    }
 }
+
 function escapeHtml(text) {
   return text
       .replace(/&/g, "&amp;")
@@ -479,17 +492,25 @@ function setupListeners(canvas) {
     // You don't need to redraw here if animate() is continuously running
   });
 
+  /* Implement L-System WYSIWYG */
   document.getElementById('rule').addEventListener('input', function() {
-    syncTextAreaMirror(this, document.getElementById('ruleMirror'));
+      syncTextAreaMirror(this, document.getElementById('ruleMirror'));
   });
+
   document.getElementById('rule').addEventListener('keyup', function() {
-    syncTextAreaMirror(this, document.getElementById('ruleMirror'));
+      syncTextAreaMirror(this, document.getElementById('ruleMirror'));
   });
+
+  document.getElementById('rule').addEventListener('click', function() {
+      syncTextAreaMirror(this, document.getElementById('ruleMirror'));
+  });
+
   document.getElementById('rule').addEventListener('scroll', function() {
-      // Sync the scroll position of the mirror div with the textarea
       document.getElementById('ruleMirror').scrollTop = this.scrollTop;
   });
 
+  /* End WYSIWYG */
+  
   document.getElementById('updateShader').addEventListener('click', function() {
       const gl = document.querySelector('#glcanvas').getContext('webgl');
        if (!gl) {

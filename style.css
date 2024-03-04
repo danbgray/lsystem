@@ -71,6 +71,14 @@ button:hover {
     margin-bottom: 10px;
 }
 
+#controls textarea::selection {
+    background: transparent;
+}
+
+/* Hide default selection highlight for Firefox */
+#controls textarea::-moz-selection {
+    background: transparent;
+}
 /* Specific styling for compact controls and center controls */
 #compactControls, #centerControl {
     display: flex;
