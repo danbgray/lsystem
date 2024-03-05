@@ -125,7 +125,9 @@ button:hover {
 }
 
 /* Styling for the mirror technique */
+/* Deprecated for now */
 .mirror {
+  visibilty:hidden; display:none;
   position: absolute;
   top: 0;
   left: 0; /* Aligns the mirror to the top-left corner of the container */
@@ -150,15 +152,15 @@ button:hover {
 }
 
 #rule {
-   position: relative;
-   z-index: 2;
-   background-color: transparent; /* Keeps the textarea background transparent */
-   color: transparent; /* Hides the text color */
-   width: 100%; /* Ensures the textarea covers the full width of its container */
-   font-size: 16px; /* Ensures font size matches between the mirror and textarea */
-   border: none;
-   background-color: rgba(0, 0, 0, 0); /* Fully transparent background */
+    background-color: #262626; /* Or any preferred color */
+    color: #00ff00; /* Text color */
+    border: 1px solid #006400; /* Border color */
+    padding: 5px;
+    width: 100%; /* Full width */
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    font-family: 'Courier New', Courier, monospace; /* Font style */
 }
+
 #rule:focus {
     outline: none; /* Removes the outline to keep the focus style clean */
 }
