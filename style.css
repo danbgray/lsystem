@@ -188,3 +188,30 @@ button:hover {
     background-color: #1DA1F2;
     color: white;
 }
+
+#made-by {
+  text-align: center;
+  margin-top: 20px;
+  padding: 10px;
+  font-family: 'Courier New', Courier, monospace;
+  color: #00ff00;
+  background-color: #000000;
+  border-top: 1px solid #003300; /* Optional: adds a top border for visual separation */
+}
+
+div#made-by {
+    float: left;
+    position: absolute;
+    right: 19px;
+    bottom: 11px;
+    color: #00AA00;
+}
+
+#made-by a {
+  text-decoration: none;
+  color: #00AA00;
+}
+
+#made-by a:hover {
+  text-decoration: underline;
+}
