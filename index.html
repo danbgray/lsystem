@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"/>
 <link rel="stylesheet" href="./style.css" />
 <script src="./shaders.js"></script>
 <script src="./lsystem.js"></script>
@@ -25,34 +26,46 @@
         <label for="depth">Recursion Depth:</label>
         <input type="number" id="depth" value="1" min="1" max="8">
     </div>
-    <div id="centerControl">
-      <label for="centerX">Center</label>
-      <input type="number" id="centerX" value="0" step="any">
-      <input type="number" id="centerY" value="0" step="any">
+    <div class="input-group">
+        <div id="centerControl" class="flex-item">
+            <i class="fas fa-crosshairs"></i>
+            <label for="centerX">Center:</label>
+            <input type="number" id="centerX" value="0" step="any">
+            <input type="number" id="centerY" value="0" step="any">
+        </div>
     </div>
     <div>
         <label for="length">Segment Length:</label>
         <input type="number" id="length" value="0.1">
     </div>
-    <div>
-        <label for="baseAngle">Base Angle:</label>
-        <input type="number" id="baseAngle" value="60">
+    <div class="input-group">
+        <div class="flex-item">
+            <label for="wave">Animate Amount:</label>
+            <input type="number" id="wave" value="0">
+        </div>
+        <div class="flex-item">
+            <label for="baseAngle">Base Angle:</label>
+            <input type="number" id="baseAngle" value="60">
+        </div>
+        <div class="flex-item">
+            <label for="currentAngle">Current Angle:</label>
+            <input type="text" id="currentAngle" readonly>
+        </div>
     </div>
-    <div>
-        <label for="wave">Animate Amount:</label>
-        <input type="number" id="wave" value="0">
+    <div id="actionButtons" style="display: flex; align-items: center; justify-content: space-between; margin-top: 20px;">
+      <button id="update">
+          <i class="fas fa-link" style="margin-right: 10px;"></i>Link
+      </button>
+      <button id="tweet">
+          <i class="fab fa-twitter" style="margin-right: 10px;"></i>Tweet
+      </button>
     </div>
-    <div>
-        <label for="currentAngle">Current Rendering Angle:</label>
-        <input type="text" id="currentAngle" readonly>
-    </div>
-
-    <hr />
     <div id="shaderCodeContainer" style="margin-top: 20px;">
-      <select id="shaderPresetSelector">
-        <option value="Custom">Select a Shader Preset</option>
-        <!-- Options will be dynamically populated -->
-      </select>
+    <label for="shaderPresetSelector">Select Shader </label><select id="shaderPresetSelector">
+      <option value="Custom">Select a Shader Preset</option>
+      <!-- Options will be dynamically populated -->
+    </select>
+    <hr />
     <button id="toggleShaderCode">Edit Shader Code</button>
     <div id="shaderCodeContent" style="display: none;">
       <button id="updateShader">Update Shaders</button>
@@ -95,9 +108,6 @@
         </textarea>
     </div>
 </div>
-
-    <button id="update">Create Link</button>
-    <button id="tweet">Tweet</button>
 
 </div>
 

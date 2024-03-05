@@ -11,11 +11,11 @@ body, html {
 /* Styling for labels */
 label {
     display: block;
-    margin-bottom: 5px;
+    margin: 5px 0; /* Adjusted margin for consistent alignment */
     color: #666;
 }
 
-/* General input and button styling */
+/* General input, button, select, and textarea styling */
 input, button, select, textarea {
     width: 100%;
     padding: 8px;
@@ -45,6 +45,9 @@ button {
     cursor: pointer;
     border: none;
     transition: background-color 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 button:hover {
@@ -57,8 +60,9 @@ button:hover {
     float: right;
     padding: 20px;
     box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
-    margin-bottom: 20px; /* Space before the next section */
     background-color: #000; /* Black background for control panel */
+    margin-bottom: 20px; /* Space before the next section */
+    overflow: hidden; /* Fixes any overflow issues */
 }
 
 /* Header within controls */
@@ -71,93 +75,114 @@ button:hover {
     margin-bottom: 10px;
 }
 
-#controls textarea::selection {
-    background: transparent;
-}
-
-/* Hide default selection highlight for Firefox */
-#controls textarea::-moz-selection {
-    background: transparent;
-}
 /* Specific styling for compact controls and center controls */
-#compactControls, #centerControl {
+.input-group, #centerControl, .angle-group {
     display: flex;
-    flex-wrap: wrap;
     justify-content: space-between;
-    gap: 10px; /* Add some space between compact controls */
+    align-items: center; /* Align items vertically for consistent height */
 }
 
-#compactControls > div, #centerControl > div {
-    flex-basis: calc(50% - 5px); /* Adjust based on gap for two columns */
+#centerControl {
+    flex-wrap: nowrap;
 }
 
-#centerControl input, #compactControls input {
-    flex-grow: 1;
+#centerControl i {
+    font-size: 1.2em; /* Slightly larger icon for visibility */
+    margin-right: 5px; /* Closer to the label */
+    color: #0c0; /* Ensures icon is visible and matches text color scheme */
 }
 
-/* Styling for horizontal rules */
-hr {
-    border: 1px solid #050;
-    background-color: green; /* Ensure the HR is visible */
+#actionButtons, .angle-group {
+    display: flex;
+    justify-content: space-between;
 }
 
-/* Media query for responsiveness */
+.angle-group .flex-item {
+    display: flex;
+    flex-direction: column;
+    width: 30%; /* Adjusted for three items on one line */
+}
+
+/* Responsive adjustments for smaller screens */
 @media (max-width: 768px) {
-    #controls, #glcanvas {
+    #controls, #glcanvas, .angle-group {
         width: 100%;
         float: none;
     }
-    #compactControls, #centerControl {
+
+    .angle-group .flex-item {
+        width: 100%; /* Full width for mobile */
+        margin-bottom: 10px; /* Space between inputs */
+    }
+
+    #centerControl, .input-group {
         flex-direction: column;
     }
-    #compactControls > div, #centerControl > div {
-        flex-basis: 100%; /* Full width on smaller screens */
-    }
-    #centerControl input {
-        width: 100%; /* Adjust input width on smaller screens */
+
+    #centerControl input, .input-group input {
+        width: 100%; /* Full width inputs on smaller screens */
     }
 }
 
 /* Styling for the mirror technique */
 .mirror {
-    position: absolute;
-    pointer-events: none;
-    z-index: 1;
-    white-space: pre-wrap; /* Preserve whitespace and line breaks */
-    word-wrap: break-word; /* Ensure long lines wrap */
-    /* Other styling should mirror the textarea exactly, adjust as necessary */
+  position: absolute;
+  top: 0;
+  left: 0; /* Aligns the mirror to the top-left corner of the container */
+  right: 0;
+  bottom: 0;
+
+  padding: 10px; /* Match the textarea padding */
+  pointer-events: none; /* Prevents interaction with the mirror */
+  z-index: 1; /* Ensures the mirror is behind the textarea */
+  color: #00ff00; /* Ensures mirror text color matches the intended style */
+  font-family: 'Courier New', Courier, monospace; /* Match the textarea font family */
+  font-size: 16px; /* Match the textarea font size */
+  line-height: normal; /* Adjust line height to match the textarea */
+  white-space: pre-wrap; /* Mimics the wrapping of the textarea */
+  overflow-y: auto; /* Allows scrolling to match the textarea */
+  word-wrap: break-word; /* Ensures long words wrap as in the textarea */
 }
+
 .textarea-container {
-    position: relative; /* Container for both textarea and mirror */
+  position: relative; /* Ensures the container is the reference point for positioning */
+  width: 100%; /* Match the width of the container to its parent */
 }
 
 #rule {
-    position: relative;
-    background-color: transparent;
-    color: transparent;
-    z-index: 2;
-    font-size: 16px; /* Match textarea font size */
+   position: relative;
+   z-index: 2;
+   background-color: transparent; /* Keeps the textarea background transparent */
+   color: transparent; /* Hides the text color */
+   width: 100%; /* Ensures the textarea covers the full width of its container */
+   font-size: 16px; /* Ensures font size matches between the mirror and textarea */
+   border: none;
+   background-color: rgba(0, 0, 0, 0); /* Fully transparent background */
 }
-
-.mirror {
-    position: absolute;
-    top: 5px;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 8px; /* Match textarea padding */
-    pointer-events: none;
-    z-index: 1;
-    color: #00ff00;
-    font-family: 'Courier New', Courier, monospace; /* Match textarea font */
-    font-size: 16px; /* Match textarea font size */
-    line-height: normal; /* Match textarea line height */
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    overflow-y: auto; /* Match textarea overflow */
+#rule:focus {
+    outline: none; /* Removes the outline to keep the focus style clean */
 }
 
 .highlight {
     background-color: #aa28aa; /* Highlight background */
     color: #0f0; /* Highlight color */
+}
+
+/* Additional styles for action buttons */
+#actionButtons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+#update, #tweet {
+    flex: 1;
+    margin: 0 5px; /* Ensure spacing between buttons */
+    font-size: 14px; /* Adjust font size as needed */
+}
+
+/* Styles for the tweet button */
+#tweet {
+    background-color: #1DA1F2;
+    color: white;
 }
