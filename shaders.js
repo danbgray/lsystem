@@ -38,49 +38,47 @@ const shaderLibrary = {
     },
     "Plant": {
         vShader: `
-          attribute vec4 aVertexPosition;
-          attribute float aDepth; // Depth will influence color in the fragment shader.
+        attribute vec4 aVertexPosition;
+        attribute float aDepth;
 
-          varying float vDepth;
+        varying float vDepth;
 
-          void main(void) {
+        void main(void) {
             gl_Position = aVertexPosition;
-            vDepth = aDepth; // Pass depth through to the fragment shader.
-          }`,
+            vDepth = aDepth;
+        }`,
         fShader: `
         precision mediump float;
 
-varying float vDepth; // Received from the vertex shader, integer values starting at 1.
+        varying float vDepth;
 
-void main(void) {
-    vec3 color;
+        void main(void) {
+            vec3 color;
+            float primaryNoise = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898,78.233))) * 4378.5453);
+            float secondaryNoise = fract(sin(dot(gl_FragCoord.xy, vec2(43.2321,54.2356))) * 12345.6789);
 
-    // Define transition ranges based on integer depth values
-    const float stemEndDepth = 50.0; // Depth at which the stem ends and leaves start
+            // Enhanced brown shades with variation for the base
+            if (vDepth <= 100.0) {
+                float oscillation = 0.05 * sin(vDepth * 0.1 + gl_FragCoord.x * 0.02);
+                float randomVariation = primaryNoise * 0.1 - 0.05; // Subtle random variation
+                color = vec3(0.45 + oscillation + randomVariation, 0.30 + randomVariation, 0.15 + randomVariation);
+            } else {
+                // More varied green shades
+                float greenBase = mix(0.4, 0.55, primaryNoise);
+                float greenOscillation = 0.3 * sin(vDepth*.4 + gl_FragCoord.y * 0.08);
+                float greenVariation = secondaryNoise * 0.15 - 0.075; // Increased random variation
+                color = vec3(0.0, greenBase + greenOscillation + greenVariation, 0.0);
 
-    // Colors for the stem and leaves
-    vec3 brown = vec3(0.65, 0.16, 0.16); // Stem color
-    vec3 green = vec3(0.0, 0.8, 0.0); // Leaves color
+                // Introduce pink with adjusted randomness and depth factor
+                float depthFactor = (vDepth - 5000.0) / 5000.0; // Normalize depth factor for pink introduction
+                depthFactor = clamp(depthFactor, 0.0, 1.0); // Ensure within [0,1]
+                if (vDepth > 300.0 && primaryNoise > (0.8 - (0.5 * depthFactor))) {
+                    color = vec3(0.9, 0.2, 0.5); // Pink
+                }
+            }
 
-    if (vDepth <= stemEndDepth) {
-        // Use brown color for the stem
-        color = brown;
-    } else {
-        // Use green color for leaves beyond the stem
-        color = green;
-    }
-
-    // Optional: Randomly introduce flower-like colors in the upper parts of the plant
-    if (vDepth > stemEndDepth && fract(sin(vDepth) * 43758.5453) > 0.9) {
-        // Mix in some pink/purple colors randomly for "flowers"
-        vec3 flowerColor = mix(vec3(0.94, 0.5, 0.5), vec3(0.5, 0.0, 0.5), fract(sin(vDepth) * 0.9));
-        color = mix(color, flowerColor, 0.8); // Softly blend the flower color with green
-    }
-
-    gl_FragColor = vec4(color, 1.0); // Apply the calculated color
-}
-
-`
+            gl_FragColor = vec4(color, 1.0);
+        }`
     },
     "Coral": {
     vShader: `
