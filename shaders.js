@@ -83,29 +83,49 @@ void main(void) {
 `
     },
     "Coral": {
-        vShader: `
-        attribute vec4 aVertexPosition;
-        attribute float aDepth;
+    vShader: `
+    attribute vec4 aVertexPosition;
+    attribute float aDepth;
+    varying float vDepth;
+    void main(void) {
+        gl_Position = aVertexPosition;
+        vDepth = aDepth;
+    }`,
+    fShader: `
+    precision mediump float;
+    varying float vDepth;
 
-        varying float vDepth;
+    // Function to convert HSV to RGB
+    vec3 hsv2rgb(vec3 c) {
+        vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+        vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+        return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+    }
 
-        void main(void) {
-            gl_Position = aVertexPosition;
-            vDepth = aDepth;
-        }`,
-        fShader: `
-        precision mediump float;
+    void main(void) {
+        // Define base hues for different clusters
+        float baseHueOrange = 0.08; // Orange
+        float baseHueRed = 0.0; // Red
+        float baseHuePink = 0.85; // Pink
+        float baseHueBlue = 0.55; // Blue
 
-        varying float vDepth;
+        // Determine the cluster based on depth
+        float cluster = mod(floor(vDepth / 5.0), 4.0); // Smaller cluster size for more frequent color changes
 
-        void main(void) {
-            // Use depth to modulate color between pink and orange
-            float r = 0.9 + 0.1 * cos(vDepth);
-            float g = 0.2 * sin(vDepth);
-            float b = 0.2;
-            gl_FragColor = vec4(r, g, b, 1.0);
-        }`
-    },
+        // Select base hue based on cluster
+        float hue = baseHueRed; // Default to red
+        if (cluster == 0.0) hue = baseHueOrange;
+        else if (cluster == 1.0) hue = baseHueRed;
+        else if (cluster == 2.0) hue = baseHuePink;
+        else if (cluster == 3.0) hue = baseHueBlue;
+
+        // Oscillate brightness within each cluster
+        float brightness = 0.8 + 0.2 * sin(vDepth * 0.1); // Brighter overall, with subtler oscillation
+
+        vec3 color = hsv2rgb(vec3(hue, 1.0, brightness)); // Full saturation, controlled brightness oscillation
+
+        gl_FragColor = vec4(color, 1.0);
+    }`},
     "StarryNight": {
         vShader: `
         attribute vec4 aVertexPosition;

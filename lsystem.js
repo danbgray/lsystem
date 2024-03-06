@@ -145,6 +145,7 @@ function drawLSystem(gl, shaderProgram, instructions, angle, centerX, centerY, l
             vertices.push(x, y, newX, newY);
             depth += 1.0;
             depthAttributes.push(depth, depth); // Assuming color/depth is applied per vertex
+
             let axiomIndex = cmd.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
             axiomAttributes.push(axiomIndex, axiomIndex); // For start and end of the line
 
