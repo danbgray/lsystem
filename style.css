@@ -202,7 +202,7 @@ button:hover {
 div#made-by {
     float: left;
     position: absolute;
-    right: 19px;
+    left: 10px;
     bottom: 11px;
     color: #00AA00;
 }

@@ -32,7 +32,6 @@ void main(void) {
     vDepth = aDepth;
     vAxiom = aAxiom;
 }
-
 `;
 
 // Fragment shader program
@@ -180,6 +179,7 @@ function drawLSystem(gl, shaderProgram, instructions, angle, centerX, centerY, l
 }
 
 
+
 function drawLines(gl, shaderProgram, vertices, depthAttributes, axiomAttributes) {
     // Vertex buffer setup
     const vertexBuffer = gl.createBuffer();
@@ -246,10 +246,7 @@ function generateLSystem(rules, axiom, depth) {
 /* On Desktop, show prompt.  This is currently not used, but we want to be able to show the user some prompt.
    to encourage interaction. */
 
-// Mouse down event to start drag
 
-// Bind the "Scale to Fit" button click event
-/* Mobile Support Functions */
 /* Mobile Support */
 function setupSensors() {
         // Check for DeviceOrientationEvent support and request permission on iOS 13+
@@ -287,13 +284,13 @@ function handleMotion(event) {
     console.log(event);
 }
 
-
 function isMobileDevice() {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
 /* Adjust mobile controls */
 function adjustLayoutForMobile() {
+  /* On mobile devices, hide all of the controls */
   if (isMobileDevice()) {
       // Hide controls panel
       document.getElementById('controls').style.display = 'none';
@@ -342,30 +339,6 @@ function updateShaderProgram(gl) {
   gl.useProgram(shaderProgram);
   console.log("Shader program updated successfully.");
   return gl;
-}
-
-function syncTextAreaMirror(textarea, mirror) {
-    let text = textarea.value;
-    const startPosition = textarea.selectionStart;
-    const endPosition = textarea.selectionEnd;
-
-    let beforeText = text.substring(0, startPosition);
-    let selectedText = text.substring(startPosition, endPosition);
-    let afterText = text.substring(endPosition);
-
-    let beforeHtml = escapeHtml(beforeText);
-    let selectedHtml = selectedText ? `<span class='highlight'>${escapeHtml(selectedText)}</span>` : '';
-    let afterHtml = escapeHtml(afterText);
-
-    // If there's a selection, highlight the selection; otherwise, highlight the preceding character
-    if (startPosition !== endPosition) {
-        mirror.innerHTML = beforeHtml + selectedHtml + afterHtml;
-    } else {
-        let lastChar = beforeText[beforeText.length - 1] || ' ';
-        let beforeLastChar = escapeHtml(beforeText.substring(0, beforeText.length - 1));
-        let lastCharHtml = `<span class='highlight'>${escapeHtml(lastChar)}</span>`;
-        mirror.innerHTML = beforeLastChar + lastCharHtml + afterHtml;
-    }
 }
 
 function escapeHtml(text) {
@@ -493,22 +466,6 @@ function setupListeners(canvas) {
     // You don't need to redraw here if animate() is continuously running
   });
 
-  /* Implement L-System WYSIWYG */
-  document.getElementById('rule').addEventListener('input', function() {
-      syncTextAreaMirror(this, document.getElementById('ruleMirror'));
-  });
-
-  document.getElementById('rule').addEventListener('keyup', function() {
-      syncTextAreaMirror(this, document.getElementById('ruleMirror'));
-  });
-
-  document.getElementById('rule').addEventListener('click', function() {
-      syncTextAreaMirror(this, document.getElementById('ruleMirror'));
-  });
-
-  document.getElementById('rule').addEventListener('scroll', function() {
-      document.getElementById('ruleMirror').scrollTop = this.scrollTop;
-  });
 
   /* End WYSIWYG*/
   document.getElementById('updateShader').addEventListener('click', function() {
@@ -602,7 +559,6 @@ function main() {
     setupSensors();
     setupListeners(canvas);
     prePopulateFields();
-    syncTextAreaMirror(document.getElementById('rule'), document.getElementById('ruleMirror'));
     /* Desktop Support */
 
     /* Setup Event Listeners */
