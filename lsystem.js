@@ -11,7 +11,6 @@
  * ----------------------------------------------------------------------------
  */
 
-
 // Global reference to the shader program
 let currentShaderProgram = null;
 
@@ -56,9 +55,8 @@ void main(void) {
 
     gl_FragColor = vec4(color, 1.0);
 }
-
-
 `;
+
 function initShaderProgram(gl, vsSource, fsSource) {
     const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
     const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
@@ -114,7 +112,6 @@ function initWebGL(canvas) {
     return {gl, shaderProgram};
 }
 
-
 /* Not currently used, but it creates a guide of the outermost bounds of the lsystem */
 function updateGlobalBounds(x, y) {
     globalBounds.minX = Math.min(globalBounds.minX, x);
@@ -136,7 +133,7 @@ function drawLSystem(gl, shaderProgram, instructions, angle, centerX, centerY, l
 
     let x = centerX, y = centerY; // Starting position
     instructions.split('').forEach(cmd => {
-        if (cmd.match(/[A-Z]/)) { // Move forward and draw for uppercase letters
+        if (cmd === 'F') { // Move forward and draw for 'F'
             let newX = x + Math.cos(dir) * length;
             let newY = y + Math.sin(dir) * length;
 
@@ -150,7 +147,7 @@ function drawLSystem(gl, shaderProgram, instructions, angle, centerX, centerY, l
 
             x = newX; // Update current position
             y = newY;
-        } else if (cmd.match(/[a-z]/)) { // Move forward without drawing for lowercase letters
+        } else if (cmd === 'f') { // Move forward without drawing for 'f'
             x += Math.cos(dir) * length; // Update current position
             y += Math.sin(dir) * length;
         } else {
@@ -177,8 +174,6 @@ function drawLSystem(gl, shaderProgram, instructions, angle, centerX, centerY, l
         drawLines(gl, shaderProgram, vertices, depthAttributes, axiomAttributes);
     }
 }
-
-
 
 function drawLines(gl, shaderProgram, vertices, depthAttributes, axiomAttributes) {
     // Vertex buffer setup
@@ -224,8 +219,6 @@ function drawLines(gl, shaderProgram, vertices, depthAttributes, axiomAttributes
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 }
 
-
-
 /* Takes in rules and axioms and generates a much longer string of directions for drawing the system */
 function generateLSystem(rules, axiom, depth) {
     let result = axiom;
@@ -241,42 +234,38 @@ function generateLSystem(rules, axiom, depth) {
 
 /* Controls */
 
-
-
 /* On Desktop, show prompt.  This is currently not used, but we want to be able to show the user some prompt.
    to encourage interaction. */
 
-
 /* Mobile Support */
 function setupSensors() {
-        // Check for DeviceOrientationEvent support and request permission on iOS 13+
-        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-            DeviceOrientationEvent.requestPermission()
-                .then(response => {
-                    if (response === 'granted') {
-                        window.addEventListener('deviceorientation', handleOrientation, false);
-                    } else {
-                        console.error('Device Orientation permission not granted.');
-                        // Implement fallback or inform the user as needed
-                    }
-                })
-                .catch(console.error);
-        } else {
-            // Directly add event listeners for devices not requiring permission (including Android)
-            window.addEventListener('deviceorientation', handleOrientation, false);
-        }
+    // Check for DeviceOrientationEvent support and request permission on iOS 13+
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission()
+            .then(response => {
+                if (response === 'granted') {
+                    window.addEventListener('deviceorientation', handleOrientation, false);
+                } else {
+                    console.error('Device Orientation permission not granted.');
+                    // Implement fallback or inform the user as needed
+                }
+            })
+            .catch(console.error);
+    } else {
+        // Directly add event listeners for devices not requiring permission (including Android)
+        window.addEventListener('deviceorientation', handleOrientation, false);
+    }
 
-        // Add devicemotion listener for all devices
-        window.addEventListener('devicemotion', handleMotion, false);
+    // Add devicemotion listener for all devices
+    window.addEventListener('devicemotion', handleMotion, false);
 }
 
 function handleOrientation(event) {
-  const initialAngle = parseFloat(getUrlParams()['angle']) || 0; // Get angle from URL or default to 0
+    const initialAngle = parseFloat(getUrlParams()['angle']) || 0; // Get angle from URL or default to 0
     const beta = event.beta; // Assuming beta axis for this example
     // Map beta to a range around the initial angle, with a max deviation of 10 degrees
     let angle = initialAngle + Math.max(Math.min(beta, 10), -10);
     document.getElementById('angle').value = angle.toFixed(2);
-
 }
 
 function handleMotion(event) {
@@ -285,23 +274,23 @@ function handleMotion(event) {
 }
 
 function isMobileDevice() {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
 /* Adjust mobile controls */
 function adjustLayoutForMobile() {
-  /* On mobile devices, hide all of the controls */
-  if (isMobileDevice()) {
-      // Hide controls panel
-      document.getElementById('controls').style.display = 'none';
+    /* On mobile devices, hide all of the controls */
+    if (isMobileDevice()) {
+        // Hide controls panel
+        document.getElementById('controls').style.display = 'none';
 
-      // Make canvas full screen
-      const canvas = document.getElementById('glcanvas');
-      canvas.style.width = '100%';
-      canvas.style.height = '100vh'; // Use 100% of the viewport height
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-  }
+        // Make canvas full screen
+        const canvas = document.getElementById('glcanvas');
+        canvas.style.width = '100%';
+        canvas.style.height = '100vh'; // Use 100% of the viewport height
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
 }
 // Utility function to compile a shader
 function compileShader(gl, type, source) {
@@ -333,21 +322,21 @@ function initOrUpdateShaderProgram(gl, vsSource, fsSource) {
 }
 
 function updateShaderProgram(gl) {
-  const vsSource = document.getElementById('vShader').value.trim();
-  const fsSource = document.getElementById('fShader').value.trim();
-  const shaderProgram = initShaderProgram(gl, vsSource, fsSource); // Assume this function is correctly implemented
-  gl.useProgram(shaderProgram);
-  console.log("Shader program updated successfully.");
-  return gl;
+    const vsSource = document.getElementById('vShader').value.trim();
+    const fsSource = document.getElementById('fShader').value.trim();
+    const shaderProgram = initShaderProgram(gl, vsSource, fsSource); // Assume this function is correctly implemented
+    gl.useProgram(shaderProgram);
+    console.log("Shader program updated successfully.");
+    return gl;
 }
 
 function escapeHtml(text) {
-  return text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 /* Data Loading */
@@ -392,145 +381,141 @@ function prePopulateFields() {
         document.getElementById('vShader').value = params['vShader'];
         document.getElementById('fShader').value = params['fShader'];
         const gl = document.querySelector('#glcanvas').getContext('webgl');
-         if (!gl) {
-             console.error("WebGL context not available.");
-             return;
-         }
-         console.log('Applying shader preset:'+params['shaderPreset']);
-         updateShaderProgram(gl); // Pass the WebGL context
+        if (!gl) {
+            console.error("WebGL context not available.");
+            return;
+        }
+        console.log('Applying shader preset:' + params['shaderPreset']);
+        updateShaderProgram(gl); // Pass the WebGL context
     }
     if (params['shaderPreset']) {
-      document.getElementById('shaderPresetSelector').value = params['shaderPreset'];
-      const gl = document.querySelector('#glcanvas').getContext('webgl');
-       if (!gl) {
-           console.error("WebGL context not available.");
-           return;
-       }
-       console.log('Applying shader preset:'+params['shaderPreset']);
-       applyShaderPreset(params['shaderPreset']);
+        document.getElementById('shaderPresetSelector').value = params['shaderPreset'];
+        const gl = document.querySelector('#glcanvas').getContext('webgl');
+        if (!gl) {
+            console.error("WebGL context not available.");
+            return;
+        }
+        console.log('Applying shader preset:' + params['shaderPreset']);
+        applyShaderPreset(params['shaderPreset']);
     }
 
 }
 
 function populateShaderPresetDropdown() {
     const dropdown = document.getElementById('shaderPresetSelector');
-    Object.keys(shaderLibrary).forEach( (presetName, index) => {
+    Object.keys(shaderLibrary).forEach((presetName, index) => {
         const option = document.createElement('option');
         option.value = presetName;
         option.textContent = presetName;
         dropdown.appendChild(option);
         if (index === 0) { // Automatically select the first shader
             dropdown.value = presetName;
-          }
+        }
     });
 }
 function applyShaderPreset(presetName) {
-  const preset = shaderLibrary[presetName];
-  if (!preset) {
-      console.warn("Shader preset not found:", presetName);
-      return;
-  }
-  document.getElementById('vShader').value = preset.vShader;
-  document.getElementById('fShader').value = preset.fShader;
-  const gl = document.querySelector('#glcanvas').getContext('webgl');
-   if (!gl) {
-       console.error("WebGL context not available.");
-       return;
-   }
-   updateShaderProgram(gl); // Pass the WebGL context
-
+    const preset = shaderLibrary[presetName];
+    if (!preset) {
+        console.warn("Shader preset not found:", presetName);
+        return;
+    }
+    document.getElementById('vShader').value = preset.vShader;
+    document.getElementById('fShader').value = preset.fShader;
+    const gl = document.querySelector('#glcanvas').getContext('webgl');
+    if (!gl) {
+        console.error("WebGL context not available.");
+        return;
+    }
+    updateShaderProgram(gl); // Pass the WebGL context
 }
-
-
 
 // Global variables for angle and mouse position
 let angle = 25; // Default angle
 let mouseX = 0; // Mouse X position
 let drag = false;
 
-let baseAngle = 25
-let waveAmount = 0
+let baseAngle = 25;
+let waveAmount = 0;
 let currentRenderingAngle = baseAngle; // Initialize with the base angle
 
 function setupListeners(canvas) {
-  const dragMessage = document.getElementById('dragMessage'); // The message element
-  /* Sets up event listeners, depends on having the canvas context already setup
-     since the listeners will have an affect on the canvas, esp Shaders ( when complete ) */
+    const dragMessage = document.getElementById('dragMessage'); // The message element
+    /* Sets up event listeners, depends on having the canvas context already setup
+       since the listeners will have an affect on the canvas, esp Shaders ( when complete ) */
 
-  document.getElementById('baseAngle').addEventListener('input', function() {
-       baseAngle = parseFloat(this.value); // Update base angle
-       // You don't need to redraw here if animate() is continuously running
-   });
-  document.getElementById('wave').addEventListener('input', function() {
-    waveAmount = parseFloat(this.value); // Update wave amount
-    // You don't need to redraw here if animate() is continuously running
-  });
-
-
-  /* End WYSIWYG*/
-  document.getElementById('updateShader').addEventListener('click', function() {
-      const gl = document.querySelector('#glcanvas').getContext('webgl');
-       if (!gl) {
-           console.error("WebGL context not available.");
-           return;
-       }
-       updateShaderProgram(gl); // Pass the WebGL context
-  });
-
-  document.getElementById('shaderPresetSelector').addEventListener('change', function() {
-      applyShaderPreset(this.value);
+    document.getElementById('baseAngle').addEventListener('input', function() {
+        baseAngle = parseFloat(this.value); // Update base angle
+        // You don't need to redraw here if animate() is continuously running
+    });
+    document.getElementById('wave').addEventListener('input', function() {
+        waveAmount = parseFloat(this.value); // Update wave amount
+        // You don't need to redraw here if animate() is continuously running
     });
 
-  document.getElementById('vShader').addEventListener('input', () => {
-      document.getElementById('shaderPresetSelector').value = "Custom"; // Assuming you have a "Custom" option
-  });
+    /* End WYSIWYG*/
+    document.getElementById('updateShader').addEventListener('click', function() {
+        const gl = document.querySelector('#glcanvas').getContext('webgl');
+        if (!gl) {
+            console.error("WebGL context not available.");
+            return;
+        }
+        updateShaderProgram(gl); // Pass the WebGL context
+    });
 
-  document.getElementById('fShader').addEventListener('input', () => {
-    document.getElementById('shaderPresetSelector').value = "Custom"; // Or de-select by setting value to ""
-  });
+    document.getElementById('shaderPresetSelector').addEventListener('change', function() {
+        applyShaderPreset(this.value);
+    });
 
-  const toggleButton = document.getElementById('toggleShaderCode');
-  const shaderCodeContent = document.getElementById('shaderCodeContent');
+    document.getElementById('vShader').addEventListener('input', () => {
+        document.getElementById('shaderPresetSelector').value = "Custom"; // Assuming you have a "Custom" option
+    });
 
-  toggleButton.addEventListener('click', function() {
-    if (shaderCodeContent.style.display === 'none' || shaderCodeContent.style.display === '') {
-      shaderCodeContent.style.display = 'block';
-    } else {
-      shaderCodeContent.style.display = 'none';
-    }
-  });
+    document.getElementById('fShader').addEventListener('input', () => {
+        document.getElementById('shaderPresetSelector').value = "Custom"; // Or de-select by setting value to ""
+    });
 
-  // Setup mouse move event listener to update the angle based on mouse position
-  /* Deprecating mouse interaction until we have something cooler
-  canvas.addEventListener('mousedown', (event) => {
-      const rect = canvas.getBoundingClientRect();
-      mouseX = event.clientX - rect.left; // Update global mouseX
-      const canvasWidth = canvas.clientWidth;
-      angle = ((mouseX-canvasWidth/2) / canvasWidth) * 90; // Map mouse X to a 0-90 degree angle
-      document.getElementById('angle').value = angle;
-      if(mouseX > canvasWidth) { drag = false; }
-      if(drag === false) {
-          drag = true;
-          dragMessage.style.display = 'none';
-      } else { drag = false; dragMessage.style.display = 'block';}
-  });
+    const toggleButton = document.getElementById('toggleShaderCode');
+    const shaderCodeContent = document.getElementById('shaderCodeContent');
 
-  // Mobile sup
-  canvas.addEventListener('mousemove', (event) => {
-    if (drag) {
-      const rect = canvas.getBoundingClientRect();
-      mouseX = event.clientX - rect.left; // Update global mouseX
-      const canvasWidth = canvas.clientWidth;
-      angle = ((mouseX-canvasWidth/2) / canvasWidth) * 90; // Map mouse X to a 0-90 degree angle
-      document.getElementById('angle').value = angle;
-    }
-  });
-  canvas.addEventListener('mouseleave', function(event) {
-    if (drag) {
-      drag = false; // Reset drag state
-      dragMessage.style.display = 'none'; // Hide message
-    }
-  }); */
+    toggleButton.addEventListener('click', function() {
+        if (shaderCodeContent.style.display === 'none' || shaderCodeContent.style.display === '') {
+            shaderCodeContent.style.display = 'block';
+        } else {
+            shaderCodeContent.style.display = 'none';
+        }
+    });
+
+    // Setup mouse move event listener to update the angle based on mouse position
+    /* Deprecating mouse interaction until we have something cooler
+    canvas.addEventListener('mousedown', (event) => {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = event.clientX - rect.left; // Update global mouseX
+        const canvasWidth = canvas.clientWidth;
+        angle = ((mouseX - canvasWidth / 2) / canvasWidth) * 90; // Map mouse X to a 0-90 degree angle
+        document.getElementById('angle').value = angle;
+        if (mouseX > canvasWidth) { drag = false; }
+        if (drag === false) {
+            drag = true;
+            dragMessage.style.display = 'none';
+        } else { drag = false; dragMessage.style.display = 'block'; }
+    });
+
+    // Mobile sup
+    canvas.addEventListener('mousemove', (event) => {
+        if (drag) {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = event.clientX - rect.left; // Update global mouseX
+            const canvasWidth = canvas.clientWidth;
+            angle = ((mouseX - canvasWidth / 2) / canvasWidth) * 90; // Map mouse X to a 0-90 degree angle
+            document.getElementById('angle').value = angle;
+        }
+    });
+    canvas.addEventListener('mouseleave', function(event) {
+        if (drag) {
+            drag = false; // Reset drag state
+            dragMessage.style.display = 'none'; // Hide message
+        }
+    }); */
 }
 
 function main() {
@@ -543,7 +528,6 @@ function main() {
     var drag = false;
     var dragStart;
     var dragEnd;
-
 
     // Ensure the CSS styling matches (optional, for consistency)
     canvas.style.width = canvas.width + 'px';
@@ -563,18 +547,17 @@ function main() {
 
     /* Setup Event Listeners */
 
-
     function parseRules(el) {
-      /* Takes in a string and returns a rule dict */
-      rulesInput = el.split("\n");
-      rules = {};
-      rulesInput.forEach(rule => {
-          let parts = rule.split('=');
-          if (parts.length === 2) {
-              rules[parts[0].trim()] = parts[1].trim();
-          }
-      });
-      return rules;
+        /* Takes in a string and returns a rule dict */
+        rulesInput = el.split("\n");
+        rules = {};
+        rulesInput.forEach(rule => {
+            let parts = rule.split('=');
+            if (parts.length === 2) {
+                rules[parts[0].trim()] = parts[1].trim();
+            }
+        });
+        return rules;
     }
     // Facilitate a default 'F=' rule if non
 
@@ -582,19 +565,18 @@ function main() {
     // L-system setup
     const recursionDepth = 5; // Adjust as needed
 
-
     /* Sharing methods */
     function getCanvasDataURL() {  /* For taking a snapshot and saving as an image */
         const canvas = document.getElementById('glcanvas');
         return canvas.toDataURL('image/png');
     }
     function createTweetLink(text, url) {
-      const tweetText = encodeURIComponent(text);
-      const tweetUrl = encodeURIComponent(url);
-      return `https://twitter.com/intent/tweet?text=${tweetText}&url=${tweetUrl}`;
+        const tweetText = encodeURIComponent(text);
+        const tweetUrl = encodeURIComponent(url);
+        return `https://twitter.com/intent/tweet?text=${tweetText}&url=${tweetUrl}`;
     }
     function generateLink() {
-          // Retrieve values from the inputs
+        // Retrieve values from the inputs
         const angle = document.getElementById('baseAngle').value;
         const depth = document.getElementById('depth').value;
         const axiom = document.getElementById('axiom').value;
@@ -615,31 +597,30 @@ function main() {
         if (shaderPreset !== 'Custom') {
             newUrl += `&shaderPreset=${encodeURIComponent(shaderPreset)}`;
         } else {
-           // Handle custom shader code
-           // Note: Be cautious about the length of URL if including entire shader code
+            // Handle custom shader code
+            // Note: Be cautious about the length of URL if including entire shader code
 
-           const vShaderCode = document.getElementById('vShader').value;
-           const fShaderCode = document.getElementById('fShader').value;
-           newUrl += `&vShader=${encodeURIComponent(vShaderCode)}&fShader=${encodeURIComponent(fShaderCode)}`;
+            const vShaderCode = document.getElementById('vShader').value;
+            const fShaderCode = document.getElementById('fShader').value;
+            newUrl += `&vShader=${encodeURIComponent(vShaderCode)}&fShader=${encodeURIComponent(fShaderCode)}`;
         }
 
         return newUrl;
     }
     document.getElementById('tweet').addEventListener('click', () => {
-      // Example text and URL
-      const text = "Check out my L-system!";
-      // Assume `generateLink` is a function that generates a URL to your app with the current L-system parameters
-      const url = generateLink(); // Implement this based on your app's logic
+        // Example text and URL
+        const text = "Check out my L-system!";
+        // Assume `generateLink` is a function that generates a URL to your app with the current L-system parameters
+        const url = generateLink(); // Implement this based on your app's logic
 
-      // Generate the tweet link (omitting the direct image embedding)
-      const tweetLink = createTweetLink(text, url);
+        // Generate the tweet link (omitting the direct image embedding)
+        const tweetLink = createTweetLink(text, url);
 
-      // Open the tweet link in a new tab/window
-      window.open(tweetLink, '_blank');
+        // Open the tweet link in a new tab/window
+        window.open(tweetLink, '_blank');
     });
 
     document.getElementById('update').addEventListener('click', () => {
-
         // Redirect the user to the new URL
         window.location.href = generateLink();
     });
@@ -671,7 +652,6 @@ function main() {
         const instructions = generateLSystem(rules, axiom, depth);
         // Draw the L-system
 
-
         drawLSystem(gl, currentShaderProgram, instructions, currentRenderingAngle, centerX, centerY, length);
     }
 
@@ -680,10 +660,9 @@ function main() {
 
 window.onload = main;
 
-
 window.addEventListener('resize', () => {
-  location.reload();
-  /*
+    location.reload();
+    /*
     const canvas = document.getElementById('glcanvas');
     canvas.width = window.innerWidth * 0.7;
     canvas.height = window.innerHeight;
